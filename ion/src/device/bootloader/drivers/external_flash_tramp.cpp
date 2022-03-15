@@ -2,7 +2,9 @@
 #include <drivers/cache.h>
 #include <drivers/config/external_flash.h>
 #include <drivers/config/clocks.h>
+#include <drivers/trampoline.h>
 #include <ion/timing.h>
+#include <assert.h>
 
 namespace Ion {
 namespace Device {
@@ -124,8 +126,6 @@ static constexpr OperatingModes sOperatingModes110(QUADSPI::CCR::OperatingMode::
 static constexpr OperatingModes sOperatingModes111(QUADSPI::CCR::OperatingMode::Single, QUADSPI::CCR::OperatingMode::Single, QUADSPI::CCR::OperatingMode::Single);
 static constexpr OperatingModes sOperatingModes114(QUADSPI::CCR::OperatingMode::Single, QUADSPI::CCR::OperatingMode::Single, QUADSPI::CCR::OperatingMode::Quad);
 static constexpr OperatingModes sOperatingModes144(QUADSPI::CCR::OperatingMode::Single, QUADSPI::CCR::OperatingMode::Quad, QUADSPI::CCR::OperatingMode::Quad);
-
-static QUADSPI::CCR::OperatingMode sOperatingMode = QUADSPI::CCR::OperatingMode::Single;
 
 static constexpr int ClockFrequencyDivisor = 2; // F(QUADSPI) = F(AHB) / ClockFrequencyDivisor
 static constexpr int FastReadQuadIODummyCycles = 4; // Must be 4 for W25Q64JV (Fig 24.A page 34) and for AT25F641 (table 7.19 page 28)
@@ -303,93 +303,10 @@ static void send_command_full(QUADSPI::CCR::FunctionalMode functionalMode, Opera
   }
 }
 
-static void initGPIO() {
-  for(const AFGPIOPin & p : Config::Pins) {
-    p.init();
-  }
-}
-
-static void initQSPI() {
-  // Enable QUADSPI AHB3 peripheral clock
-  RCC.AHB3ENR()->setQSPIEN(true);
-
- // Configure controller for target device
-  class QUADSPI::DCR dcr(0);
-  dcr.setFSIZE(NumberOfAddressBitsInChip - 1);
-  constexpr int ChipSelectHighTimeCycles = (ChipSelectHighTimeInNanoSeconds * static_cast<float>(Clocks::Config::AHBFrequency)) / (static_cast<float>(ClockFrequencyDivisor) * 1000.0f) + 1.0f;
-  dcr.setCSHT(ChipSelectHighTimeCycles - 1);
-  dcr.setCKMODE(true);
-  QUADSPI.DCR()->set(dcr);
-  class QUADSPI::CR cr(0);
-  cr.setPRESCALER(ClockFrequencyDivisor - 1);
-  cr.setEN(true);
-  QUADSPI.CR()->set(cr);
-}
-
-static void initChip() {
-  // Release sleep deep
-  send_command(Command::ReleaseDeepPowerDown);
-  Timing::usleep(3);
-
-  /* The chip initially expects commands in SPI mode. We need to use SPI to tell
-   * it to switch to QuadSPI/QPI. */
-  if (sOperatingMode == QUADSPI::CCR::OperatingMode::Single) {
-    send_command(Command::WriteEnable);
-    ExternalFlashStatusRegister::StatusRegister2 statusRegister2(0);
-    statusRegister2.setQE(true);
-    wait();
-    send_write_command(Command::WriteStatusRegister2, reinterpret_cast<uint8_t *>(FlashAddressSpaceSize), reinterpret_cast<uint8_t *>(&statusRegister2), sizeof(statusRegister2), sOperatingModes101);
-    wait();
-    sOperatingMode = QUADSPI::CCR::OperatingMode::Quad;
-  }
-  set_as_memory_mapped();
-}
-
 void init() {
-  if (Config::NumberOfSectors == 0) {
-    return;
-  }
-  initGPIO();
-  initQSPI();
-  initChip();
-}
-
-static void shutdownGPIO() {
-  for(const AFGPIOPin & p : Config::Pins) {
-    p.group().OSPEEDR()->setOutputSpeed(p.pin(), GPIO::OSPEEDR::OutputSpeed::Low);
-    p.group().MODER()->setMode(p.pin(), GPIO::MODER::Mode::Analog);
-    p.group().PUPDR()->setPull(p.pin(), GPIO::PUPDR::Pull::None);
-  }
-}
-
-static void shutdownChip() {
-  unset_memory_mapped_mode();
-  // Reset
-  send_command(Command::EnableReset);
-  send_command(Command::Reset);
-  sOperatingMode = QUADSPI::CCR::OperatingMode::Single;
-  Timing::usleep(30);
-
-  // Sleep deep
-  send_command(Command::DeepPowerDown);
-  Timing::usleep(3);
-}
-
-static void shutdownQSPI() {
-  // Reset the controller
-  RCC.AHB3RSTR()->setQSPIRST(true);
-  RCC.AHB3RSTR()->setQSPIRST(false);
-
-  RCC.AHB3ENR()->setQSPIEN(false); // TODO: move in Device::shutdownClocks
 }
 
 void shutdown() {
-  if (Config::NumberOfSectors == 0) {
-    return;
-  }
-  shutdownChip();
-  shutdownQSPI();
-  shutdownGPIO();
 }
 
 int SectorAtAddress(uint32_t address) {
@@ -405,7 +322,7 @@ int SectorAtAddress(uint32_t address) {
   i = address >> NumberOfAddressBitsIn32KbyteBlock;
   if (i >= 1) {
     i = Config::NumberOf4KSectors + i - 1;
-    assert(i >= 0 && i <= Config::NumberOf32KSectors);
+    assert(i >= Config::NumberOf4KSectors && i <= Config::NumberOf4KSectors + Config::NumberOf32KSectors);
     return i;
   }
   i = address >> NumberOfAddressBitsIn4KbyteBlock;
@@ -429,76 +346,20 @@ void unlockFlash() {
 }
 
 void MassErase() {
-  if (Config::NumberOfSectors == 0) {
-    return;
-  }
-  unset_memory_mapped_mode();
-  unlockFlash();
-  send_command(Command::WriteEnable);
-  wait();
-  send_command(Command::ChipErase);
-  wait();
-  set_as_memory_mapped();
+  // Mass erase is not enabled on kernel
+  assert(false);
 }
 
-void __attribute__((noinline)) EraseSector(int i) {
-  assert(i >= 0 && i < Config::NumberOfSectors);
-  unset_memory_mapped_mode();
-  unlockFlash();
-  send_command(Command::WriteEnable);
-  wait();
-  /* WARNING: this code assumes that the flash sectors are of increasing size:
-   * first all 4K sectors, then all 32K sectors, and finally all 64K sectors. */
-  if (i < Config::NumberOf4KSectors) {
-    send_write_command(Command::Erase4KbyteBlock, reinterpret_cast<uint8_t *>(i << NumberOfAddressBitsIn4KbyteBlock), nullptr, 0, sOperatingModes110);
-  } else if (i < Config::NumberOf4KSectors + Config::NumberOf32KSectors) {
-    /* If the sector is the number Config::NumberOf4KSectors, we want to write
-     * at the address 1 << NumberOfAddressBitsIn32KbyteBlock, hence the formula
-     * (i - Config::NumberOf4KSectors + 1). */
-    send_write_command(Command::Erase32KbyteBlock, reinterpret_cast<uint8_t *>((i - Config::NumberOf4KSectors + 1) << NumberOfAddressBitsIn32KbyteBlock), nullptr, 0, sOperatingModes110);
-  } else {
-    /* If the sector is the number
-     * Config::NumberOf4KSectors - Config::NumberOf32KSectors, we want to write
-     * at the address 1 << NumberOfAddressBitsIn32KbyteBlock, hence the formula
-     * (i - Config::NumberOf4KSectors - Config::NumberOf32KSectors + 1). */
-    send_write_command(Command::Erase64KbyteBlock, reinterpret_cast<uint8_t *>((i - Config::NumberOf4KSectors - Config::NumberOf32KSectors + 1) << NumberOfAddressBitsIn64KbyteBlock), nullptr, 0, sOperatingModes110);
-  }
-  wait();
-  set_as_memory_mapped();
+void WriteMemory(uint8_t * destination, const uint8_t * source, size_t length) {
+  asm("cpsid if");
+  (*reinterpret_cast<void(**)(uint8_t*, const uint8_t*, size_t)>(Ion::Device::Trampoline::address(Ion::Device::Trampoline::ExternalFlashWriteMemory)))(destination, source, length);
+  asm("cpsie if");
 }
 
-void __attribute__((noinline)) WriteMemory(uint8_t * destination, const uint8_t * source, size_t length) {
-  destination -= ExternalFlash::Config::StartAddress;
-  if (Config::NumberOfSectors == 0) {
-    return;
-  }
-  unset_memory_mapped_mode();
-  /* Each 256-byte page of the external flash memory (contained in a previously erased area)
-   * may be programmed in burst mode with a single Page Program instruction.
-   * However, when the end of a page is reached, the addressing wraps to the beginning.
-   * Hence a Page Program instruction must be issued for each page. */
-  static constexpr size_t PageSize = 256;
-  uint8_t offset = reinterpret_cast<uint32_t>(destination) & (PageSize - 1);
-  size_t lengthThatFitsInPage = PageSize - offset;
-  while (length > 0) {
-    if (lengthThatFitsInPage > length) {
-      lengthThatFitsInPage = length;
-    }
-    send_command(Command::WriteEnable);
-    wait();
-
-    /* Some chips implement 0x32 only, others 0x33 only, we call both. This does
-     * not seem to affect the writing. */
-    send_write_command(Command::QuadPageProgramAT25F641, destination, source, lengthThatFitsInPage, sOperatingModes144);
-    send_write_command(Command::QuadPageProgramW25Q64JV, destination, source, lengthThatFitsInPage, sOperatingModes114);
-
-    length -= lengthThatFitsInPage;
-    destination += lengthThatFitsInPage;
-    source += lengthThatFitsInPage;
-    lengthThatFitsInPage = PageSize;
-    wait();
-  }
-  set_as_memory_mapped();
+void EraseSector(int i) {
+  asm("cpsid if");
+  (*reinterpret_cast<void(**)(int)>(Ion::Device::Trampoline::address(Ion::Device::Trampoline::ExternalFlashEraseSector)))(i);
+  asm("cpsie if");
 }
 
 void JDECid(uint8_t * manufacturerID, uint8_t * memoryType, uint8_t * capacityType) {

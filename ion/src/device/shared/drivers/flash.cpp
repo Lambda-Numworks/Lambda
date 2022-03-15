@@ -45,8 +45,8 @@ void WriteMemory(uint8_t * destination, uint8_t * source, size_t length) {
   assert(SectorAtAddress((uint32_t)destination) >= 0);
   if (SectorAtAddress((uint32_t)destination) < InternalFlash::Config::NumberOfSectors) {
     InternalFlash::WriteMemory(destination, source, length);
-  } else {
-    ExternalFlash::WriteMemory(destination - ExternalFlash::Config::StartAddress, source, length);
+  } else if (SectorAtAddress((uint32_t)destination) != -1) {
+    ExternalFlash::WriteMemory(destination, source, length);
   }
 }
 

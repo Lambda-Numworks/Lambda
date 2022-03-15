@@ -16,6 +16,10 @@ extern "C" {
   extern char _bss_section_end_ram;
   extern cxx_constructor _init_array_start;
   extern cxx_constructor _init_array_end;
+
+  extern char _isr_vector_table_start_flash;
+  extern char _isr_vector_table_start_ram;
+  extern char _isr_vector_table_end_ram;
 }
 
 void __attribute__((noinline)) abort() {
@@ -71,6 +75,10 @@ void __attribute__((noinline)) start() {
   /* This is where execution starts after reset.
    * Many things are not initialized yet so the code here has to pay attention. */
 
+  /* Initialize the FPU as early as possible.
+   * For example, static C++ objects are very likely to manipulate float values */
+  Ion::Device::Board::initFPU();
+
   /* Copy data section to RAM
    * The data section is R/W but its initialization value matters. It's stored
    * in Flash, but linked as if it were in RAM. Now's our opportunity to copy
@@ -83,10 +91,6 @@ void __attribute__((noinline)) start() {
    * Until we do, any uninitialized global variable will be unusable. */
   size_t bssSectionLength = (&_bss_section_end_ram - &_bss_section_start_ram);
   memset(&_bss_section_start_ram, 0, bssSectionLength);
-
-  /* Initialize the FPU as early as possible.
-   * For example, static C++ objects are very likely to manipulate float values */
-  Ion::Device::Board::initFPU();
 
   /* Call static C++ object constructors
    * The C++ compiler creates an initialization function for each static object.
@@ -107,6 +111,14 @@ void __attribute__((noinline)) start() {
     abort();
   }
 #endif
+
+  /* Copy isr_vector_table section to RAM
+   * The isr table must be within the memory mapped by the microcontroller (it
+   * can't live in the external flash). */
+  if (_isr_vector_table_start_ram != NULL && _isr_vector_table_end_ram != NULL) {
+    size_t isrSectionLength = (&_isr_vector_table_end_ram - &_isr_vector_table_start_ram);
+    memcpy(&_isr_vector_table_start_ram, &_isr_vector_table_start_flash, isrSectionLength);
+  }
 
   Ion::Device::Board::init();
 

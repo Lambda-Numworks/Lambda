@@ -60,3 +60,6 @@ const char * Ion::softwareVersion() {
 const char * Ion::patchLevel() {
   return platform_infos.patchLevel();
 }
+
+void Ion::updateSlotInfo() {
+}

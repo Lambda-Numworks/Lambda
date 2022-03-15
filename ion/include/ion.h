@@ -58,6 +58,8 @@ bool stackSafe();
 // Collect registers in a buffer and returns the stack pointer
 uintptr_t collectRegisters(jmp_buf regs);
 
+void updateSlotInfo();
+
 }
 
 #endif
