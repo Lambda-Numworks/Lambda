@@ -1,4 +1,5 @@
 #include "calculator.h"
+#include <ion.h>
 #include <ion/usb.h>
 #include <drivers/keyboard.h>
 #include <drivers/serial_number.h>

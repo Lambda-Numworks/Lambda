@@ -39,6 +39,8 @@ void writePCBVersion(PCBVersion version);
 void lockPCBVersion();
 bool pcbVersionIsLocked();
 
+void bootloaderMPU();
+
 }
 }
 }

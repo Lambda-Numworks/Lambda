@@ -10,6 +10,12 @@
 typedef void(*ISR)(void);
 extern ISR InitialisationVector[];
 
+extern "C" {
+  extern char _isr_vector_table_start_flash;
+  extern char _isr_vector_table_start_ram;
+  extern char _isr_vector_table_end_ram;
+}
+
 // Public Ion methods
 
 const char * Ion::fccId() {
@@ -129,6 +135,14 @@ void initMPU() {
 }
 
 void init() {
+  /* Copy isr_vector_table section to RAM
+   * The isr table must be within the memory mapped by the microcontroller (it
+   * can't live in the external flash). */
+  if (_isr_vector_table_start_ram != NULL && _isr_vector_table_end_ram != NULL) {
+    size_t isrSectionLength = (&_isr_vector_table_end_ram - &_isr_vector_table_start_ram);
+    memcpy(&_isr_vector_table_start_ram, &_isr_vector_table_start_flash, isrSectionLength);
+  }
+
   initMPU();
   initClocks();
 

@@ -16,10 +16,6 @@ extern "C" {
   extern char _bss_section_end_ram;
   extern cxx_constructor _init_array_start;
   extern cxx_constructor _init_array_end;
-
-  extern char _isr_vector_table_start_flash;
-  extern char _isr_vector_table_start_ram;
-  extern char _isr_vector_table_end_ram;
 }
 
 void __attribute__((noinline)) abort() {
@@ -111,14 +107,6 @@ void __attribute__((noinline)) start() {
     abort();
   }
 #endif
-
-  /* Copy isr_vector_table section to RAM
-   * The isr table must be within the memory mapped by the microcontroller (it
-   * can't live in the external flash). */
-  if (_isr_vector_table_start_ram != NULL && _isr_vector_table_end_ram != NULL) {
-    size_t isrSectionLength = (&_isr_vector_table_end_ram - &_isr_vector_table_start_ram);
-    memcpy(&_isr_vector_table_start_ram, &_isr_vector_table_start_flash, isrSectionLength);
-  }
 
   Ion::Device::Board::init();
 
