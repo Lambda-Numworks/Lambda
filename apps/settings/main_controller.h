@@ -18,7 +18,7 @@ extern const Shared::SettingsMessageTree s_modelFloatDisplayModeChildren[4];
 extern const Shared::SettingsMessageTree s_modelComplexFormatChildren[3];
 extern const Shared::SettingsMessageTree s_modelFontChildren[2];
 extern const Shared::SettingsMessageTree s_modelExamChildren[2];
-extern const Shared::SettingsMessageTree s_modelAboutChildren[3];
+extern const Shared::SettingsMessageTree s_modelAboutChildren[4];
 extern const Shared::SettingsMessageTree s_model;
 
 class MainController : public ViewController, public ListViewDataSource, public SelectableTableViewDataSource {

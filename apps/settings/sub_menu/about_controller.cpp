@@ -55,15 +55,18 @@ int AboutController::reusableCellCount(int type) {
   return k_totalNumberOfCell;
 }
 
+static char s_SizeBuffer[6];
+
 void AboutController::willDisplayCellForIndex(HighlightCell * cell, int index) {
   GenericSubController::willDisplayCellForIndex(cell, index);
   MessageTableCellWithBuffer * myCell = (MessageTableCellWithBuffer *)cell;
   static const char * messages[] = {
     Ion::softwareVersion(),
     Ion::serialNumber(),
-    Ion::fccId()
+    Ion::fccId(),
+    Ion::storageSize(s_SizeBuffer)
   };
-  assert(index >= 0 && index < 3);
+  assert(index >= 0 && index < 4);
   myCell->setAccessoryText(messages[index]);
 }
 
