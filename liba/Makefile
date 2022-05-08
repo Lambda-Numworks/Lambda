@@ -22,7 +22,12 @@ liba_src += $(addprefix liba/src/, \
   strchr.c \
   strlcat.c \
   strlcpy.c \
+  strncpy.c \
+  strcpy.c \
   strlen.c \
+  strnlen.c \
+  strspn.c \
+  strcspn.c \
   external/sqlite/mem5.c \
 )
 

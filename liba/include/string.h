@@ -16,7 +16,13 @@ int strcmp(const char * s1, const char * s2);
 int strncmp(const char * s1, const char * s2, size_t n);
 size_t strlcat(char * dst, const char * src, size_t dstSize);
 size_t strlcpy(char * dst, const char * src, size_t dstSize);
+char* strncpy(char * dst, const char * src, size_t dstSize);
+char* strcpy(char * dst, const char * src);
+size_t strnlen(const char * s, size_t max);
 size_t strlen(const char * s);
+
+size_t strspn(const char * string, const char * acceptedCharacters);
+size_t strcspn(const char * string, const char * acceptedCharacters);
 
 LIBA_END_DECLS
 
