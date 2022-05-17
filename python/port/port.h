@@ -10,11 +10,6 @@ extern "C" {
 
 namespace MicroPython {
 
-class ScriptProvider {
-public:
-  virtual const char * contentOfScript(const char * name, bool markAsFetched) = 0;
-};
-
 class ExecutionEnvironment {
 public:
   ExecutionEnvironment() {}
@@ -38,7 +33,6 @@ public:
 
 void init(void * heapStart, void * heapEnd);
 void deinit();
-void registerScriptProvider(ScriptProvider * s);
 void collectRootsAtAddress(char * address, int len);
 
 class Color {

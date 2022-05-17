@@ -55,7 +55,7 @@
 #define MICROPY_PY_ASYNC_AWAIT (0)
 
 // Whether to support bytearray object
-#define MICROPY_PY_BUILTINS_BYTEARRAY (0)
+#define MICROPY_PY_BUILTINS_BYTEARRAY (1)
 
 // Whether to support frozenset object
 #define MICROPY_PY_BUILTINS_FROZENSET (1)
@@ -76,7 +76,7 @@
 
 // Whether to support attrtuple type (MicroPython extension)
 // It provides space-efficient tuples with attribute access
-#define MICROPY_PY_ATTRTUPLE (0)
+#define MICROPY_PY_ATTRTUPLE (1)
 
 // Whether to provide "collections" module
 #define MICROPY_PY_COLLECTIONS (0)
@@ -91,7 +91,19 @@
 #define MICROPY_PY_GC (0)
 
 // Whether to provide "io" module
-#define MICROPY_PY_IO (0)
+#define MICROPY_PY_IO (1)
+#define MICROPY_PY_IO_IOBASE (1)
+#define MICROPY_READER_VFS (1)
+
+// Whether to provide "io.FileIO" class
+#define MICROPY_PY_IO_FILEIO (1)
+
+#define MICROPY_VFS (1)
+
+#define MICROPY_VFS_SPIFFS (1)
+
+#define mp_type_fileio mp_type_vfs_spiffs_fileio
+#define mp_type_textio mp_type_vfs_spiffs_textio
 
 // Whether to provide "struct" module
 #define MICROPY_PY_STRUCT (0)
@@ -122,6 +134,11 @@ typedef uintptr_t mp_uint_t; // must be pointer size
 
 typedef long mp_off_t;
 
+// use vfs's functions for import stat and builtin open
+#define mp_import_stat mp_vfs_import_stat
+#define mp_builtin_open mp_vfs_open
+#define mp_builtin_open_obj mp_vfs_open_obj
+
 // extra built in names to add to the global namespace
 #define MICROPY_PORT_BUILTINS \
     { MP_OBJ_NEW_QSTR(MP_QSTR_open), (mp_obj_t)&mp_builtin_open_obj }, \
@@ -135,6 +152,7 @@ extern const struct _mp_obj_module_t modmatplotlib_module;
 extern const struct _mp_obj_module_t modpyplot_module;
 extern const struct _mp_obj_module_t modtime_module;
 extern const struct _mp_obj_module_t modturtle_module;
+extern const struct _mp_obj_module_t uos_module;
 
 #define MICROPY_PORT_BUILTIN_MODULES \
     { MP_ROM_QSTR(MP_QSTR_ion), MP_ROM_PTR(&modion_module) }, \
@@ -143,4 +161,11 @@ extern const struct _mp_obj_module_t modturtle_module;
     { MP_ROM_QSTR(MP_QSTR_matplotlib_dot_pyplot), MP_ROM_PTR(&modpyplot_module) }, \
     { MP_ROM_QSTR(MP_QSTR_time), MP_ROM_PTR(&modtime_module) }, \
     { MP_ROM_QSTR(MP_QSTR_turtle), MP_ROM_PTR(&modturtle_module) }, \
+    { MP_ROM_QSTR(MP_QSTR_uos), MP_ROM_PTR(&uos_module) }, \
 
+// Enable setjmp in debug mode. This is to avoid some optimizations done
+// specifically for x86_64 using inline assembly, which makes the debug binary
+// crash with an illegal instruction
+#ifndef NDEBUG
+  #define MICROPY_NLR_SETJMP 1
+#endif

@@ -22,10 +22,13 @@ extern "C" {
 #include "py/mperrno.h"
 #include "py/mphal.h"
 #include "py/nlr.h"
+#include "py/obj.h"
 #include "py/parsenum.h"
 #include "py/repl.h"
 #include "py/runtime.h"
 #include "py/stackctrl.h"
+#include "extmod/vfs.h"
+#include "extmod/vfs_spiffs.h"
 #include "mphalport.h"
 #include "mod/turtle/modturtle.h"
 #include "mod/matplotlib/pyplot/modpyplot.h"
@@ -33,7 +36,6 @@ extern "C" {
 
 #include <escher/palette.h>
 
-static MicroPython::ScriptProvider * sScriptProvider = nullptr;
 static MicroPython::ExecutionEnvironment * sCurrentExecutionEnvironment = nullptr;
 
 MicroPython::ExecutionEnvironment * MicroPython::ExecutionEnvironment::currentExecutionEnvironment() {
@@ -145,14 +147,29 @@ void MicroPython::init(void * heapStart, void * heapEnd) {
 #endif
   gc_init(heapStart, heapEnd);
   mp_init();
+
+  // create new object
+  mp_vfs_mount_t *vfs = m_new_obj(mp_vfs_mount_t);
+  vfs->str = "/";
+  vfs->len = 1;
+  vfs->obj = mp_type_vfs_spiffs.make_new(&mp_type_vfs_spiffs, 0, 0, NULL);
+  vfs->next = NULL;
+
+  // insert the vfs into the mount table
+  mp_vfs_mount_t **vfsp = &MP_STATE_VM(vfs_mount_table);
+  while (*vfsp != NULL) {
+    if ((*vfsp)->len == 1) {
+      // make sure anything mounted at the root stays at the end of the list
+      vfs->next = *vfsp;
+      break;
+    }
+    vfsp = &(*vfsp)->next;
+  }
+  *vfsp = vfs;
 }
 
 void MicroPython::deinit() {
   mp_deinit();
-}
-
-void MicroPython::registerScriptProvider(ScriptProvider * s) {
-  sScriptProvider = s;
 }
 
 void MicroPython::collectRootsAtAddress(char * address, int byteLength) {
@@ -303,26 +320,6 @@ void gc_collect(void) {
 
 void nlr_jump_fail(void *val) {
     while (1);
-}
-
-mp_lexer_t * mp_lexer_new_from_file(const char * filename) {
-  if (sScriptProvider != nullptr) {
-    const char * script = sScriptProvider->contentOfScript(filename, true);
-    if (script != nullptr) {
-      return mp_lexer_new_from_str_len(qstr_from_str(filename), script, strlen(script), 0 /* size_t free_len*/);
-    } else {
-      mp_raise_OSError(MP_ENOENT);
-    }
-  } else {
-    mp_raise_OSError(MP_ENOENT);
-  }
-}
-
-mp_import_stat_t mp_import_stat(const char *path) {
-  if (sScriptProvider && sScriptProvider->contentOfScript(path, false)) {
-    return MP_IMPORT_STAT_FILE;
-  }
-  return MP_IMPORT_STAT_NO_EXIST;
 }
 
 void mp_hal_stdout_tx_strn_cooked(const char * str, size_t len) {

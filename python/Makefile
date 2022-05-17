@@ -128,6 +128,10 @@ py_src = $(addprefix python/src/py/,\
 
 extmod_src += $(addprefix python/src/extmod/,\
   modurandom.c \
+  moduos.c \
+  vfs.c \
+  vfs_spiffs.c \
+  vfs_reader.c \
 )
 
 port_src += $(addprefix python/port/,\
@@ -159,8 +163,8 @@ port_src += $(addprefix python/port/,\
 # In order to change the name of the micropython module 'urandom' to 'random'
 # (without altering micropython files), we redefined the macro MP_QSTR_urandom
 # by DMP_QSTR_random.
-$(call object_for,python/src/py/objmodule.c): SFLAGS += -DMP_QSTR_urandom="MP_QSTR_random"
-$(call object_for,python/src/extmod/modurandom.c): SFLAGS += -DMP_QSTR_urandom="MP_QSTR_random"
+# $(call object_for,python/src/py/objmodule.c): SFLAGS += -DMP_QSTR_urandom="MP_QSTR_random"
+# $(call object_for,python/src/extmod/modurandom.c): SFLAGS += -DMP_QSTR_urandom="MP_QSTR_random"
 
 # Handle upward-growing stack
 # Some platforms such as emscripten have a stack that grows up. We've rewritten

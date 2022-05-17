@@ -3,11 +3,6 @@
 #include <string.h>
 #include "mphalport.h"
 
-mp_obj_t mp_builtin_open(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs) {
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_KW(mp_builtin_open_obj, 1, mp_builtin_open);
-
 mp_obj_t mp_builtin_input(size_t n_args, const mp_obj_t *args) {
   // 1 - Retrieve the prompt if any
   const char * prompt = NULL;
