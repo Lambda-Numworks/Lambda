@@ -9,6 +9,7 @@ app_settings_src = $(addprefix apps/settings/,\
   main_controller_prompt_none.cpp:-beta \
   main_controller_prompt_none.cpp:-update \
   main_controller_prompt_update.cpp:+update \
+  sub_menu/storage_controller.cpp \
   sub_menu/about_controller.cpp \
   sub_menu/about_controller_official.cpp:+official \
   sub_menu/about_controller_non_official.cpp:-official \

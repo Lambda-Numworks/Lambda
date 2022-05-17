@@ -13,7 +13,8 @@ constexpr SettingsMessageTree s_modelEditionModeChildren[2] = {SettingsMessageTr
 constexpr SettingsMessageTree s_modelFloatDisplayModeChildren[4] = {SettingsMessageTree(I18n::Message::Decimal), SettingsMessageTree(I18n::Message::Scientific), SettingsMessageTree(I18n::Message::Engineering), SettingsMessageTree(I18n::Message::SignificantFigures)};
 constexpr SettingsMessageTree s_modelComplexFormatChildren[3] = {SettingsMessageTree(I18n::Message::Real), SettingsMessageTree(I18n::Message::Cartesian), SettingsMessageTree(I18n::Message::Polar)};
 constexpr SettingsMessageTree s_modelFontChildren[2] = {SettingsMessageTree(I18n::Message::LargeFont), SettingsMessageTree(I18n::Message::SmallFont)};
-constexpr SettingsMessageTree s_modelAboutChildren[4] = {SettingsMessageTree(I18n::Message::SoftwareVersion), SettingsMessageTree(I18n::Message::SerialNumber), SettingsMessageTree(I18n::Message::FccId), SettingsMessageTree(I18n::Message::StorageSize)};
+constexpr SettingsMessageTree s_modelStorageChildren[2] = {SettingsMessageTree(I18n::Message::StorageUsage), SettingsMessageTree(I18n::Message::StorageFormat)};
+constexpr SettingsMessageTree s_modelAboutChildren[3] = {SettingsMessageTree(I18n::Message::SoftwareVersion), SettingsMessageTree(I18n::Message::SerialNumber), SettingsMessageTree(I18n::Message::FccId)};
 
 MainController::MainController(Responder * parentResponder, InputEventHandlerDelegate * inputEventHandlerDelegate) :
   ViewController(parentResponder),
@@ -24,6 +25,7 @@ MainController::MainController(Responder * parentResponder, InputEventHandlerDel
   m_displayModeController(this, inputEventHandlerDelegate),
   m_localizationController(this, Metric::CommonTopMargin, LocalizationController::Mode::Language),
   m_examModeController(this),
+  m_storageController(this),
   m_aboutController(this)
 {
   for (int i = 0; i < k_numberOfSimpleChevronCells; i++) {
@@ -90,6 +92,7 @@ bool MainController::handleEvent(Ion::Events::Event event) {
       &m_localizationController,
       &m_localizationController,
       &m_examModeController,
+      &m_storageController,
       &m_aboutController,
       &m_aboutController
     };

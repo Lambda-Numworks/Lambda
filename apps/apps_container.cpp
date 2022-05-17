@@ -83,6 +83,8 @@ App::Snapshot * AppsContainer::usbConnectedAppSnapshot() {
 }
 
 void AppsContainer::reset() {
+  // Format flash storage
+  Ion::FileSystem::format();
   // Empty storage (delete functions, variables, python scripts)
   Ion::Storage::sharedStorage()->destroyAllRecords();
   // Empty clipboard

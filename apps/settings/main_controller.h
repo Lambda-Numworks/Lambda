@@ -9,6 +9,7 @@
 #include "sub_menu/exam_mode_controller.h"
 #include "sub_menu/localization_controller.h"
 #include "sub_menu/preferences_controller.h"
+#include "sub_menu/storage_controller.h"
 
 namespace Settings {
 
@@ -18,7 +19,8 @@ extern const Shared::SettingsMessageTree s_modelFloatDisplayModeChildren[4];
 extern const Shared::SettingsMessageTree s_modelComplexFormatChildren[3];
 extern const Shared::SettingsMessageTree s_modelFontChildren[2];
 extern const Shared::SettingsMessageTree s_modelExamChildren[2];
-extern const Shared::SettingsMessageTree s_modelAboutChildren[4];
+extern const Shared::SettingsMessageTree s_modelStorageChildren[2];
+extern const Shared::SettingsMessageTree s_modelAboutChildren[3];
 extern const Shared::SettingsMessageTree s_model;
 
 class MainController : public ViewController, public ListViewDataSource, public SelectableTableViewDataSource {
@@ -52,7 +54,8 @@ private:
    * hasPrompt() (TODO: make hasPrompt() constexpr and correct
    * k_indexOfAboutCell) */
   constexpr static int k_indexOfPopUpCell = k_indexOfExamModeCell + 1;
-  constexpr static int k_indexOfAboutCell = k_indexOfExamModeCell + 1;
+  constexpr static int k_indexOfStorageCell = k_indexOfPopUpCell + 1;
+  constexpr static int k_indexOfAboutCell = k_indexOfStorageCell + 1;
   static const Shared::SettingsMessageTree * model();
   StackViewController * stackController() const;
   I18n::Message promptMessage() const;
@@ -66,6 +69,7 @@ private:
   DisplayModeController m_displayModeController;
   LocalizationController m_localizationController;
   ExamModeController m_examModeController;
+  StorageController m_storageController;
   AboutController m_aboutController;
 
 };

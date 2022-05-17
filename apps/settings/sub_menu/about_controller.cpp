@@ -63,10 +63,9 @@ void AboutController::willDisplayCellForIndex(HighlightCell * cell, int index) {
   static const char * messages[] = {
     Ion::softwareVersion(),
     Ion::serialNumber(),
-    Ion::fccId(),
-    Ion::storageSize(s_SizeBuffer)
+    Ion::fccId()
   };
-  assert(index >= 0 && index < 4);
+  assert(index >= 0 && index < 3);
   myCell->setAccessoryText(messages[index]);
 }
 
