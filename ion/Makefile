@@ -32,6 +32,14 @@ ion_src += $(addprefix ion/src/shared/, \
 
 ion_src += ion/src/external/lz4/lz4.c
 
+ion_src += $(addprefix ion/src/external/spiffs/,\
+  spiffs_cache.c \
+  spiffs_check.c \
+  spiffs_gc.c \
+  spiffs_hydrogen.c \
+  spiffs_nucleus.c \
+)
+
 tests_src += $(addprefix ion/test/,\
   crc32.cpp\
   events.cpp\
