@@ -24,6 +24,8 @@ size_t strlen(const char * s);
 size_t strspn(const char * string, const char * acceptedCharacters);
 size_t strcspn(const char * string, const char * acceptedCharacters);
 
+char *strncat(char * dest, const char * src, size_t n);
+
 LIBA_END_DECLS
 
 #endif
