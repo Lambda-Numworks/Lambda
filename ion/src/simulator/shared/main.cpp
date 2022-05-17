@@ -2,6 +2,7 @@
 #include "journal.h"
 #include "platform.h"
 #include "random.h"
+#include "filesystem.h"
 #include "state_file.h"
 #include "telemetry.h"
 #include "window.h"
@@ -102,6 +103,7 @@ int main(int argc, char * argv[]) {
 #endif
 
   Random::init();
+  FileSystem::init();
   if (!headless) {
     Journal::init();
 #if EPSILON_TELEMETRY

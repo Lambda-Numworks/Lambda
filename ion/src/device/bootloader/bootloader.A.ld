@@ -24,5 +24,6 @@ STACK_SIZE = 32K;
 FIRST_FLASH_SECTOR_SIZE = 4K;
 SIGNED_PAYLOAD_LENGTH = 8;
 USERLAND_OFFSET = 64K;
+FLASH_BLOCK = 4K;
 
 INCLUDE ion/src/device/bootloader/bootloader.common.ld;

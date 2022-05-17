@@ -55,6 +55,7 @@ SECTIONS {
     _init_array_start = .;
     KEEP (*(.init_array*))
     _init_array_end = .;
+    ASSERT(_init_array_start == _init_array_end, "Error: C++ Static constructors are not allowed");
   } >INTERNAL_FLASH
 
   .data : {

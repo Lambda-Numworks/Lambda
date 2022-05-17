@@ -11,6 +11,7 @@
 #include <drivers/timing.h>
 #include <drivers/usb.h>
 #include <drivers/config/clocks.h>
+#include <drivers/filesystem.h>
 
 namespace Ion {
 namespace Device {
@@ -50,9 +51,11 @@ void initPeripherals(bool initBacklight) {
   Console::init();
   SWD::init();
   Timing::init();
+  FileSystem::init();
 }
 
 void shutdownPeripherals(bool keepLEDAwake) {
+  FileSystem::shutdown();
   Timing::shutdown();
   SWD::shutdown();
   Console::shutdown();

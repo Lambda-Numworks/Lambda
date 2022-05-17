@@ -56,6 +56,7 @@ ion_device_dfu_src += $(addprefix ion/src/device/shared/drivers/, \
   display.cpp \
   events_keyboard_platform.cpp \
   flash.cpp \
+  filesystem_dummy.cpp \
   internal_flash.cpp \
   keyboard.cpp \
   led.cpp \

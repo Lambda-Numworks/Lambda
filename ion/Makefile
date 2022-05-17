@@ -24,6 +24,7 @@ ion_src += $(addprefix ion/src/shared/, \
   events.cpp \
   events_keyboard.cpp \
   events_modifier.cpp \
+  filesystem.cpp \
   stack_position.cpp \
   storage.cpp \
   unicode/utf8_decoder.cpp\

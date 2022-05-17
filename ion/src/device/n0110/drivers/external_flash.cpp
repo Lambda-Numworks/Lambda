@@ -79,9 +79,7 @@ enum class Command : uint8_t {
   FastReadQuadIO          = 0xEB
 };
 
-static constexpr uint8_t NumberOfAddressBitsIn64KbyteBlock = 16;
-static constexpr uint8_t NumberOfAddressBitsIn32KbyteBlock = 15;
-static constexpr uint8_t NumberOfAddressBitsIn4KbyteBlock = 12;
+static constexpr uint8_t NumberOfAddressBitsInBlock = 12;
 
 class ExternalFlashStatusRegister {
 public:
@@ -393,23 +391,8 @@ void shutdown() {
 }
 
 int SectorAtAddress(uint32_t address) {
-  /* WARNING: this code assumes that the flash sectors are of increasing size:
-   * first all 4K sectors, then all 32K sectors, and finally all 64K sectors. */
-  int i = address >> NumberOfAddressBitsIn64KbyteBlock;
-  if (i > Config::NumberOf64KSectors) {
-    return -1;
-  }
-  if (i >= 1) {
-    return Config::NumberOf4KSectors + Config::NumberOf32KSectors + i - 1;
-  }
-  i = address >> NumberOfAddressBitsIn32KbyteBlock;
-  if (i >= 1) {
-    i = Config::NumberOf4KSectors + i - 1;
-    assert(i >= 0 && i <= Config::NumberOf32KSectors);
-    return i;
-  }
-  i = address >> NumberOfAddressBitsIn4KbyteBlock;
-  assert(i <= Config::NumberOf4KSectors);
+  int i = address >> NumberOfAddressBitsInBlock;
+  assert(i <= Config::NumberOfSectors);
   return i;
 }
 
@@ -449,19 +432,8 @@ void __attribute__((noinline)) EraseSector(int i) {
   wait();
   /* WARNING: this code assumes that the flash sectors are of increasing size:
    * first all 4K sectors, then all 32K sectors, and finally all 64K sectors. */
-  if (i < Config::NumberOf4KSectors) {
-    send_write_command(Command::Erase4KbyteBlock, reinterpret_cast<uint8_t *>(i << NumberOfAddressBitsIn4KbyteBlock), nullptr, 0, sOperatingModes110);
-  } else if (i < Config::NumberOf4KSectors + Config::NumberOf32KSectors) {
-    /* If the sector is the number Config::NumberOf4KSectors, we want to write
-     * at the address 1 << NumberOfAddressBitsIn32KbyteBlock, hence the formula
-     * (i - Config::NumberOf4KSectors + 1). */
-    send_write_command(Command::Erase32KbyteBlock, reinterpret_cast<uint8_t *>((i - Config::NumberOf4KSectors + 1) << NumberOfAddressBitsIn32KbyteBlock), nullptr, 0, sOperatingModes110);
-  } else {
-    /* If the sector is the number
-     * Config::NumberOf4KSectors - Config::NumberOf32KSectors, we want to write
-     * at the address 1 << NumberOfAddressBitsIn32KbyteBlock, hence the formula
-     * (i - Config::NumberOf4KSectors - Config::NumberOf32KSectors + 1). */
-    send_write_command(Command::Erase64KbyteBlock, reinterpret_cast<uint8_t *>((i - Config::NumberOf4KSectors - Config::NumberOf32KSectors + 1) << NumberOfAddressBitsIn64KbyteBlock), nullptr, 0, sOperatingModes110);
+  if (i < Config::NumberOfSectors) {
+    send_write_command(Command::Erase4KbyteBlock, reinterpret_cast<uint8_t *>(i << NumberOfAddressBitsInBlock), nullptr, 0, sOperatingModes110);
   }
   wait();
   set_as_memory_mapped();

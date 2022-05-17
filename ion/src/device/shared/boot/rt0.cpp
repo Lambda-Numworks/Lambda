@@ -19,6 +19,8 @@ extern "C" {
 }
 
 void __attribute__((noinline)) abort() {
+  asm("bkpt");
+  for(;;);
 #ifdef NDEBUG
   Ion::Device::Reset::core();
 #else

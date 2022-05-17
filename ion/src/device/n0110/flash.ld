@@ -23,6 +23,7 @@ MEMORY {
 
 STACK_SIZE = 32K;
 FIRST_EXTERNAL_FLASH_SECTOR_SIZE = 4K;
+EXTERNAL_FLASH_BLOCK = 4K;
 
 SECTIONS {
   .isr_vector_table ORIGIN(INTERNAL_FLASH) : {
@@ -141,6 +142,7 @@ SECTIONS {
     _init_array_start = .;
     KEEP (*(.init_array*))
     _init_array_end = .;
+    ASSERT(_init_array_start == _init_array_end, "Error: C++ Static constructors are not allowed");
   } >INTERNAL_FLASH
 
   .data : {
@@ -163,6 +165,18 @@ SECTIONS {
     *(.data.*)
     _data_section_end_ram = .;
   } >SRAM AT> INTERNAL_FLASH
+
+  .filesystem_buffer : {
+    . = ALIGN(EXTERNAL_FLASH_BLOCK);
+    _filesystem_buffer_start = ABSOLUTE(.);
+    KEEP(*(.filesystem_buffer))
+    /* Note: We don't increment "." here, we set it. */
+    . = ORIGIN(EXTERNAL_FLASH) + LENGTH(EXTERNAL_FLASH);
+    _filesystem_buffer_end = ABSOLUTE(.);
+    PROVIDE(_filesystem_buffer_len = ABSOLUTE(_filesystem_buffer_end - _filesystem_buffer_start));
+    PROVIDE(_filesystem_buffer_blocks = ABSOLUTE(_filesystem_buffer_len / EXTERNAL_FLASH_BLOCK));
+    PROVIDE(_filesystem_buffer_blocks_size = ABSOLUTE(EXTERNAL_FLASH_BLOCK));
+  } >EXTERNAL_FLASH
 
   .bss : {
     /* The bss section contains data for all uninitialized variables
