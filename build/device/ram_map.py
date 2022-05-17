@@ -3,13 +3,14 @@
 import re
 import subprocess
 import sys
+
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter
 
-readelf_line_regex = re.compile("[0-9]+:\s+([0-9a-f]+)\s+([0-9]+)\s+[A-Z]+")
+readelf_line_regex = re.compile("[0-9]+:\s+([0-9a-f]+)\s+((?:0x[0-9a-f]+)|(?:[0-9]+))\s+[A-Z]+")
 def parse_line(line):
   hex_start, dec_size = re.findall(readelf_line_regex, line)[0]
-  return (int(hex_start, 16), int(dec_size))
+  return (int(hex_start, 16), int(dec_size, 16) if dec_size.startswith("0x") else int(dec_size))
 
 readelf_output = subprocess.check_output([
   "arm-none-eabi-readelf",
