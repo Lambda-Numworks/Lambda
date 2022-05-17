@@ -16,7 +16,6 @@ MenuController::MenuController(Responder * parentResponder, App * pythonDelegate
   m_addNewScriptCell(),
   m_consoleButton(this, I18n::Message::Console, Invocation([](void * context, void * sender) {
         MenuController * menu = (MenuController *)context;
-        menu->consoleController()->setAutoImport(true);
         menu->stackViewController()->push(menu->consoleController());
         return true;
         }, this), KDFont::LargeFont),
@@ -71,7 +70,6 @@ void MenuController::didBecomeFirstResponder() {
   Container::activeApp()->setFirstResponder(&m_selectableTableView);
 #if EPSILON_GETOPT
   if (consoleController()->locked()) {
-    consoleController()->setAutoImport(true);
     stackViewController()->push(consoleController());
     return;
   }
@@ -137,6 +135,7 @@ void MenuController::renameSelectedScript() {
 void MenuController::deleteScript(Script script) {
   assert(!script.isNull());
   script.destroy();
+  m_scriptStore->markDirty();
   updateAddScriptRowDisplay();
 }
 
@@ -147,9 +146,8 @@ void MenuController::reloadConsole() {
 
 void MenuController::openConsoleWithScript(Script script) {
   reloadConsole();
-  consoleController()->setAutoImport(false);
   stackViewController()->push(consoleController());
-  consoleController()->autoImportScript(script, true);
+  consoleController()->runScript(script);
   m_reloadConsoleWhenBecomingFirstResponder = true;
 }
 
@@ -315,8 +313,8 @@ bool MenuController::textFieldDidFinishEditing(TextField * textField, const char
     }
     newName = const_cast<const char *>(numberedDefaultName);
   }
-  Script::ErrorStatus error = Script::nameCompliant(newName) ? m_scriptStore->scriptAtIndex(m_selectableTableView.selectedRow()).setName(newName) : Script::ErrorStatus::NonCompliantName;
-  if (error == Script::ErrorStatus::None) {
+  Ion::Storage::Record::ErrorStatus error = Script::nameCompliant(newName) ? m_scriptStore->scriptAtIndex(m_selectableTableView.selectedRow()).setName(newName) : Ion::Storage::Record::ErrorStatus::NonCompliantName;
+  if (error == Ion::Storage::Record::ErrorStatus::None) {
     updateAddScriptRowDisplay();
     textField->setText(newName);
     int currentRow = m_selectableTableView.selectedRow();
@@ -329,13 +327,14 @@ bool MenuController::textFieldDidFinishEditing(TextField * textField, const char
     reloadConsole();
     Container::activeApp()->setFirstResponder(&m_selectableTableView);
     AppsContainer::sharedAppsContainer()->setShiftAlphaStatus(Ion::Events::ShiftAlphaStatus::Default);
+    m_selectableTableView.reloadData();
     return true;
-  } else if (error == Script::ErrorStatus::NameTaken) {
+  } else if (error == Ion::Storage::Record::ErrorStatus::NameTaken) {
     Container::activeApp()->displayWarning(I18n::Message::NameTaken);
-  } else if (error == Script::ErrorStatus::NonCompliantName) {
+  } else if (error == Ion::Storage::Record::ErrorStatus::NonCompliantName) {
     Container::activeApp()->displayWarning(I18n::Message::AllowedCharactersaz09, I18n::Message::NameCannotStartWithNumber);
   } else {
-    assert(error == Script::ErrorStatus::NotEnoughSpaceAvailable);
+    assert(error == Ion::Storage::Record::ErrorStatus::NotEnoughSpaceAvailable);
     Container::activeApp()->displayWarning(I18n::Message::NameTooLong);
   }
   return false;
@@ -353,8 +352,10 @@ bool MenuController::textFieldDidHandleEvent(TextField * textField, bool returnV
 }
 
 void MenuController::addScript() {
-  Script::ErrorStatus error = m_scriptStore->addNewScript();
-  if (error == Script::ErrorStatus::None) {
+  Ion::Storage::Record::ErrorStatus error = m_scriptStore->addNewScript();
+  m_scriptStore->markDirty();
+  if (error == Ion::Storage::Record::ErrorStatus::None) {
+    // m_selectableTableView.selectRow(0);
     updateAddScriptRowDisplay();
     renameSelectedScript();
     return;
@@ -396,13 +397,13 @@ bool MenuController::privateTextFieldDidAbortEditing(TextField * textField, bool
       deleteScript(script);
       return true;
     }
-    Script::ErrorStatus error = script.setBaseNameWithExtension(numberedDefaultName, ScriptStore::k_scriptExtension);
+    Ion::Storage::Record::ErrorStatus error = script.setBaseNameWithExtension(numberedDefaultName, ScriptStore::k_scriptExtension);
     scriptName = m_scriptStore->scriptAtIndex(m_selectableTableView.selectedRow()).fullName();
     /* Because we use the numbered default name, the name should not be
      * already taken. Plus, the script could be added only if the storage has
      * enough available space to add a script named 'script99.py' */
     (void) error; // Silence the "variable unused" warning if assertions are not enabled
-    assert(error == Script::ErrorStatus::None);
+    assert(error == Ion::Storage::Record::ErrorStatus::None);
     if (menuControllerStaysInResponderChain) {
       updateAddScriptRowDisplay();
     }

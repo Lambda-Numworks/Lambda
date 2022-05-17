@@ -12,7 +12,7 @@ namespace Code {
 EditorController::EditorController(MenuController * menuController, App * pythonDelegate) :
   ViewController(nullptr),
   m_editorView(this, pythonDelegate),
-  m_script(Ion::Storage::Record()),
+  m_script(),
   m_scriptIndex(-1),
   m_menuController(menuController)
 {
@@ -22,22 +22,9 @@ EditorController::EditorController(MenuController * menuController, App * python
 void EditorController::setScript(Script script, int scriptIndex) {
   m_script = script;
   m_scriptIndex = scriptIndex;
+  m_script.content(m_buffer);
 
-  /* We edit the script directly in the storage buffer. We thus put all the
-   * storage available space at the end of the current edited script and we set
-   * its size.
-   *
-   * |****|****|m_script|****|**********|¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨|
-   *                                          available space
-   * is transformed to:
-   *
-   * |****|****|m_script|¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨|****|**********|
-   *                          available space
-   *
-   * */
-
-  Ion::Storage::sharedStorage()->putAvailableSpaceAtEndOfRecord(m_script);
-  m_editorView.setText(const_cast<char *>(m_script.content()), m_script.contentSize());
+  m_editorView.setText(const_cast<char *>(m_buffer), sizeof(m_buffer));
 }
 
 void EditorController::willExitApp() {
@@ -63,7 +50,8 @@ void EditorController::didBecomeFirstResponder() {
 void EditorController::viewWillAppear() {
   ViewController::viewWillAppear();
   m_editorView.loadSyntaxHighlighter();
-  m_editorView.setCursorLocation(m_editorView.text() + strlen(m_editorView.text()));
+  // m_editorView.setCursorLocation(m_editorView.text() + strlen(m_editorView.text()));
+  m_editorView.setCursorLocation(m_editorView.text());
 }
 
 void EditorController::viewDidDisappear() {
@@ -150,13 +138,10 @@ StackViewController * EditorController::stackController() {
 }
 
 void EditorController::cleanStorageEmptySpace() {
-  if (m_script.isNull() || !Ion::Storage::sharedStorage()->hasRecord(m_script)) {
+  if (m_script.isNull()) {
     return;
   }
-  Ion::Storage::Record::Data scriptValue = m_script.value();
-  Ion::Storage::sharedStorage()->getAvailableSpaceFromEndOfRecord(
-      m_script,
-      scriptValue.size - Script::StatusSize() - (strlen(m_script.content()) + 1)); // TODO optimize number of script fetches
+  m_script.save(m_buffer, strlen(m_buffer));
 }
 
 

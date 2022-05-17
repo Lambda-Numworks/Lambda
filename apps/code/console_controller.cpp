@@ -28,7 +28,6 @@ ConsoleController::ConsoleController(Responder * parentResponder, App * pythonDe
   TextFieldDelegate(),
   MicroPython::ExecutionEnvironment(),
   m_pythonDelegate(pythonDelegate),
-  m_importScriptsWhenViewAppears(false),
   m_selectableTableView(this, this, this, this),
   m_editCell(this, this, this),
   m_scriptStore(scriptStore),
@@ -47,26 +46,19 @@ ConsoleController::ConsoleController(Responder * parentResponder, App * pythonDe
 }
 
 bool ConsoleController::loadPythonEnvironment() {
+  m_scriptStore->markDirty();
   if (!m_pythonDelegate->isPythonUser(this)) {
-    m_scriptStore->clearConsoleFetchInformation();
     emptyOutputAccumulationBuffer();
     m_pythonDelegate->initPythonWithUser(this);
-    MicroPython::registerScriptProvider(m_scriptStore);
-    m_importScriptsWhenViewAppears = m_autoImportScripts;
   }
   return true;
 }
 
 void ConsoleController::unloadPythonEnvironment() {
+  m_scriptStore->markDirty();
   if (!m_pythonDelegate->isPythonUser(nullptr)) {
     m_consoleStore.startNewSession();
     m_pythonDelegate->deinitPython();
-  }
-}
-
-void ConsoleController::autoImport() {
-  for (int i = 0; i < m_scriptStore->numberOfScripts(); i++) {
-    autoImportScript(m_scriptStore->scriptAtIndex(i));
   }
 }
 
@@ -175,11 +167,6 @@ const char * ConsoleController::inputText(const char * prompt) {
 void ConsoleController::viewWillAppear() {
   ViewController::viewWillAppear();
   loadPythonEnvironment();
-  if (m_importScriptsWhenViewAppears) {
-    m_importScriptsWhenViewAppears = false;
-    autoImport();
-  }
-
   reloadData(true);
 }
 
@@ -452,38 +439,37 @@ void ConsoleController::printText(const char * text, size_t length) {
   }
 }
 
-void ConsoleController::autoImportScript(Script script, bool force) {
+void ConsoleController::runScript(Script script) {
   /* The sandbox might be displayed, for instance if we are auto-importing
    * several scripts that draw at importation. In this case, we want to remove
    * the sandbox. */
   hideAnyDisplayedViewController();
 
-  if (script.autoImportationStatus() || force) {
-    // Step 1 - Create the command "from scriptName import *".
+  // Step 1 - Create the command "from scriptName import *".
 
-    assert(strlen(k_importCommand1) + strlen(script.fullName()) - strlen(ScriptStore::k_scriptExtension) - 1 + strlen(k_importCommand2) + 1 <= k_maxImportCommandSize);
-    char command[k_maxImportCommandSize];
+  assert(strlen(k_importCommand1) + strlen(script.fullName()) - strlen(ScriptStore::k_scriptExtension) - 1 + strlen(k_importCommand2) + 1 <= k_maxImportCommandSize);
+  char command[k_maxImportCommandSize];
 
-    // Copy "from "
-    size_t currentChar = strlcpy(command, k_importCommand1, k_maxImportCommandSize);
-    const char * scriptName = script.fullName();
+  // Copy "from "
+  size_t currentChar = strlcpy(command, k_importCommand1, k_maxImportCommandSize);
+  const char * scriptName = script.fullName();
 
-    /* Copy the script name without the extension ".py". The '.' is overwritten
-     * by the null terminating char. */
-    int copySizeWithNullTerminatingZero = std::min(k_maxImportCommandSize - currentChar, strlen(scriptName) - strlen(ScriptStore::k_scriptExtension));
-    assert(copySizeWithNullTerminatingZero >= 0);
-    assert(copySizeWithNullTerminatingZero <= k_maxImportCommandSize - currentChar);
-    strlcpy(command+currentChar, scriptName, copySizeWithNullTerminatingZero);
-    currentChar += copySizeWithNullTerminatingZero-1;
+  /* Copy the script name without the extension ".py". The '.' is overwritten
+    * by the null terminating char. */
+  int copySizeWithNullTerminatingZero = std::min(k_maxImportCommandSize - currentChar, strlen(scriptName) - strlen(ScriptStore::k_scriptExtension));
+  assert(copySizeWithNullTerminatingZero >= 0);
+  assert(copySizeWithNullTerminatingZero <= k_maxImportCommandSize - currentChar);
+  strlcpy(command+currentChar, scriptName, copySizeWithNullTerminatingZero);
+  currentChar += copySizeWithNullTerminatingZero-1;
 
-    // Copy " import *"
-    assert(k_maxImportCommandSize >= currentChar);
-    strlcpy(command+currentChar, k_importCommand2, k_maxImportCommandSize - currentChar);
+  // Copy " import *"
+  assert(k_maxImportCommandSize >= currentChar);
+  strlcpy(command+currentChar, k_importCommand2, k_maxImportCommandSize - currentChar);
 
-    // Step 2 - Run the command
-    runAndPrintForCommand(command);
-  }
-  if (!isDisplayingViewController() && force) {
+  // Step 2 - Run the command
+  runAndPrintForCommand(command);
+
+  if (!isDisplayingViewController()) {
     reloadData(true);
   }
 }

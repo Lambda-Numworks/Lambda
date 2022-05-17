@@ -154,6 +154,8 @@ int VariableBoxController::typeAtLocation(int i, int j) {
 }
 
 void VariableBoxController::loadFunctionsAndVariables(int scriptIndex, const char * textToAutocomplete, int textToAutocompleteLength) {
+  // TODO: Implement
+  /*
   assert(scriptIndex >= 0);
 
   // Reset the node counts
@@ -162,6 +164,7 @@ void VariableBoxController::loadFunctionsAndVariables(int scriptIndex, const cha
   if (textToAutocomplete != nullptr && textToAutocompleteLength < 0) {
     textToAutocompleteLength = strlen(textToAutocomplete);
   }
+  */
   /* If we are autocompleting a text, we want the returned text to not include
    * the beginning that is equal to the text to autocomplete.
    * For instance, if we are displaying the variable box with the text "for" to
@@ -170,6 +173,7 @@ void VariableBoxController::loadFunctionsAndVariables(int scriptIndex, const cha
    * While loading the functions and variables, we thus set
    * m_shortenResultCharCount, the number of chars to cut from the text
    * returned. */
+  /*
   m_shortenResultCharCount = textToAutocomplete == nullptr ? 0 : textToAutocompleteLength;
 
   // Always load the builtin functions and variables
@@ -177,18 +181,12 @@ void VariableBoxController::loadFunctionsAndVariables(int scriptIndex, const cha
   Script script = m_scriptStore->scriptAtIndex(scriptIndex);
   assert(!script.isNull());
 
-  /* Handle the fetchedForVariableBox status: we will import the current script
-   * variables in loadCurrentVariablesInScript, so we do not want to import
-   * those variables before, if any imported script also imported the current
-   * script. */
-  assert(!script.fetchedForVariableBox());
-  script.setFetchedForVariableBox(true);
-
   // Load the imported and current variables
   const char * scriptContent = script.content();
   assert(scriptContent != nullptr);
   loadImportedVariablesInScript(scriptContent, textToAutocomplete, textToAutocompleteLength);
   loadCurrentVariablesInScript(scriptContent, textToAutocomplete, textToAutocompleteLength);
+  */
 }
 
 const char * VariableBoxController::autocompletionAlternativeAtIndex(int textToAutocompleteLength, int * textToInsertLength, bool * addParentheses, int index, int * indexToUpdate) {
@@ -226,14 +224,15 @@ const char * VariableBoxController::autocompletionAlternativeAtIndex(int textToA
 }
 
 void VariableBoxController::loadVariablesImportedFromScripts() {
+  // TODO: Implement
+  /*
   empty();
   const int scriptsCount = m_scriptStore->numberOfScripts();
   for (int i = 0; i < scriptsCount; i++) {
     Script script = m_scriptStore->scriptAtIndex(i);
-    if (script.fetchedFromConsole()) {
-      loadGlobalAndImportedVariablesInScriptAsImported(script, nullptr, -1, false);
-    }
+    loadGlobalAndImportedVariablesInScriptAsImported(script, nullptr, -1, false);
   }
+  */
 }
 
 void VariableBoxController::empty() {
@@ -241,7 +240,6 @@ void VariableBoxController::empty() {
   m_currentScriptNodesCount = 0;
   m_importedNodesCount = 0;
   m_shortenResultCharCount = 0;
-  m_scriptStore->clearVariableBoxFetchInformation();
 }
 
 void VariableBoxController::insertAutocompletionResultAtIndex(int index) {
@@ -629,10 +627,8 @@ void VariableBoxController::loadCurrentVariablesInScript(const char * scriptCont
 }
 
 void VariableBoxController::loadGlobalAndImportedVariablesInScriptAsImported(Script script, const char * textToAutocomplete, int textToAutocompleteLength, bool importFromModules) {
-  if (script.fetchedForVariableBox()) {
-    // We already fetched these script variables
-    return;
-  }
+  // TODO: Implement
+  /*
   nlr_buf_t nlr;
   if (nlr_push(&nlr) == 0) {
     const char * scriptName = script.fullName();
@@ -649,12 +645,12 @@ void VariableBoxController::loadGlobalAndImportedVariablesInScriptAsImported(Scr
         addImportStructFromScript(pns, structKind, scriptName, textToAutocomplete, textToAutocompleteLength);
       } else if (addNodesFromImportMaybe(pns, textToAutocomplete, textToAutocompleteLength, importFromModules)) {
         // The script is is only an import, handled in addNodesFromImportMaybe
-      } else if (structKind == PN_file_input_2) {
+      } else if (structKind == PN_file_input_2) {*/
         /* At this point, if the script node is not of type "file_input_2", it
          * will not have main structures of the wanted type.
          * We look for structures at first level (not inside nested scopes) that
          * are either dunction definitions, variables statements or imports. */
-        size_t n = MP_PARSE_NODE_STRUCT_NUM_NODES(pns);
+/*        size_t n = MP_PARSE_NODE_STRUCT_NUM_NODES(pns);
         for (size_t i = 0; i < n; i++) {
           mp_parse_node_t child = pns->nodes[i];
           if (MP_PARSE_NODE_IS_STRUCT(child)) {
@@ -674,8 +670,7 @@ void VariableBoxController::loadGlobalAndImportedVariablesInScriptAsImported(Scr
     mp_parse_tree_clear(&parseTree);
     nlr_pop();
   }
-  // Mark that we already fetched these script variables
-  script.setFetchedForVariableBox(true);
+  */
 }
 
 bool VariableBoxController::addNodesFromImportMaybe(mp_parse_node_struct_t * parseNode, const char * textToAutocomplete, int textToAutocompleteLength, bool importFromModules) {
@@ -771,11 +766,14 @@ bool VariableBoxController::addNodesFromImportMaybe(mp_parse_node_struct_t * par
       }
     } else {
       // Try fetching the nodes from a script
+      // TODO: Implement
+      /*
       Script importedScript;
       const char * scriptFullName;
       if (importationSourceIsScript(importationSourceName, &scriptFullName, &importedScript)) {
         loadGlobalAndImportedVariablesInScriptAsImported(importedScript, textToAutocomplete, textToAutocompleteLength);
       }
+      */
     }
   }
   return true;
@@ -828,6 +826,8 @@ bool VariableBoxController::importationSourceIsModule(const char * sourceName, c
 
 bool VariableBoxController::importationSourceIsScript(const char * sourceName, const char * * scriptFullName, Script * retreivedScript) {
    // Try fetching the nodes from a script
+   // TODO: Implement
+   /*
    Script importedScript = ScriptStore::ScriptBaseNamed(sourceName);
    if (importedScript.isNull()) {
      return false;
@@ -836,6 +836,7 @@ bool VariableBoxController::importationSourceIsScript(const char * sourceName, c
    if (retreivedScript != nullptr) {
       *retreivedScript = importedScript;
    }
+   */
    return true;
 }
 

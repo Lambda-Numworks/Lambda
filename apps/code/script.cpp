@@ -1,3 +1,5 @@
+#include <ion/filesystem.h>
+
 #include "script.h"
 #include "script_store.h"
 
@@ -65,54 +67,99 @@ bool Script::nameCompliant(const char * name) {
   return false;
 }
 
-uint8_t * StatusFromData(Script::Data d) {
-  return const_cast<uint8_t *>(static_cast<const uint8_t *>(d.buffer));
+char * Script::content(char* out_buffer) const {
+  if (m_null)
+    return NULL;
+
+  spiffs_file fd = SPIFFS_open(&global_filesystem, m_name, SPIFFS_O_RDONLY, 0);
+  if (fd < 0)
+    return NULL;
+
+  
+
+  size_t size = 0;
+  char* tmp = out_buffer;
+
+  while(1) {
+    int res = SPIFFS_read(&global_filesystem, fd, tmp, 256);
+    assert(res >= 0);
+
+    size += res;
+    tmp = out_buffer + size;
+
+    if (res == 0)
+      break;
+  }
+
+  int res = SPIFFS_close(&global_filesystem, fd);
+  assert(res >= 0);
+  out_buffer[size] = '\0';
+  return out_buffer;
 }
 
-bool Script::autoImportationStatus() const {
-  return getStatutBit(k_autoImportationStatusMask);
+void Script::save(char* out_buffer, size_t size) const {
+  if (m_null)
+    return;
+
+  
+  spiffs_file fd = SPIFFS_open(&global_filesystem, m_name, SPIFFS_O_CREAT | SPIFFS_O_WRONLY | SPIFFS_O_TRUNC, 0);
+  assert(fd > 0);
+  if (fd < 0)
+    return;
+  
+  int res = SPIFFS_write(&global_filesystem, fd, out_buffer, size);
+  assert(res >= 0);
+  if (res < 0)
+    return;
+  
+  res = SPIFFS_close(&global_filesystem, fd);
+  assert(res >= 0);
+  if (res < 0)
+    return;
 }
 
-void Script::toggleAutoimportationStatus() {
-  assert(!isNull());
-  Data d = value();
-  *StatusFromData(d) ^= k_autoImportationStatusMask;
-  setValue(d);
+size_t Script::contentSize() const {
+  if (m_null)
+    return 0;
+
+  spiffs_stat info;
+
+  int res = SPIFFS_stat(&global_filesystem, m_name, &info);
+  assert(res >= 0);
+  if (res < 0)
+    return 0;
+  
+  return info.size;
 }
 
-const char * Script::content() const {
-  Data d = value();
-  return ((const char *)d.buffer) + StatusSize();
+void Script::destroy() {
+  int res = SPIFFS_remove(&global_filesystem, m_name);
+  assert(res >= 0);
+  m_null = true;
 }
 
-bool Script::fetchedFromConsole() const {
-  return getStatutBit(k_fetchedFromConsoleMask);
+Ion::Storage::Record::ErrorStatus Script::setBaseNameWithExtension(const char* newName, const char* extension) {
+  char name_buffer[65];
+  strncpy(name_buffer, newName, 64);
+  strncat(name_buffer, ".", 64);
+  strncat(name_buffer, extension, 64);
+
+  return setName(name_buffer);
 }
 
-void Script::setFetchedFromConsole(bool fetched) {
-  setStatutBit(k_fetchedFromConsoleMask, k_fetchedFromConsoleOffset, fetched);
-}
+Ion::Storage::Record::ErrorStatus Script::setName(const char* newName) {
+  int res = SPIFFS_rename(&global_filesystem, m_name, newName);
 
-bool Script::fetchedForVariableBox() const {
-  return getStatutBit(k_fetchedForVariableBoxMask);
-}
+  if (res == SPIFFS_ERR_CONFLICTING_NAME)
+    return Ion::Storage::Record::ErrorStatus::NameTaken;
+  else if (res == SPIFFS_ERR_NAME_TOO_LONG || res == SPIFFS_ERR_FULL)
+    return Ion::Storage::Record::ErrorStatus::NotEnoughSpaceAvailable;
 
-void Script::setFetchedForVariableBox(bool fetched) {
-  setStatutBit(k_fetchedForVariableBoxMask, k_fetchedForVariableBoxOffset, fetched);
-}
+  assert(res >= 0);
 
-bool Script::getStatutBit(uint8_t mask) const {
-  assert(!isNull());
-  Data d = value();
-  return ((*StatusFromData(d)) & mask) != 0;
-}
+  strncpy(m_name, newName, 65);
 
-void Script::setStatutBit(uint8_t mask, uint8_t offset, bool statusBit) {
-  assert(!isNull());
-  Data d = value();
-  uint8_t * status = StatusFromData(d);
-  *status = ((*status) & ~mask) | (static_cast<uint8_t>(statusBit) << offset); //TODO Create and use a bit operations library
-  setValue(d);
+  return Ion::Storage::Record::ErrorStatus::None;
 }
 
 }

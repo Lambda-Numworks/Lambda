@@ -11,7 +11,7 @@ extern "C" {
 
 namespace Code {
 
-class ScriptStore : public MicroPython::ScriptProvider {
+class ScriptStore {
 public:
   static constexpr char k_scriptExtension[] = "py";
   static constexpr size_t k_scriptExtensionLength = 2;
@@ -20,28 +20,16 @@ public:
   static bool ScriptNameIsFree(const char * baseName);
 
   ScriptStore();
-  Script scriptAtIndex(int index) {
-    return Script(Ion::Storage::sharedStorage()->recordWithExtensionAtIndex(k_scriptExtension, index));
-  }
-  static Script ScriptNamed(const char * fullName) {
-    return Script(Ion::Storage::sharedStorage()->recordNamed(fullName));
-  }
-  static Script ScriptBaseNamed(const char * baseName) {
-    return Script(Ion::Storage::sharedStorage()->recordBaseNamedWithExtension(baseName, k_scriptExtension));
-  }
-  int numberOfScripts() {
-    return Ion::Storage::sharedStorage()->numberOfRecordsWithExtension(k_scriptExtension);
-  }
+
+  int numberOfScripts();
+  Script scriptAtIndex(int index);
   Ion::Storage::Record::ErrorStatus addNewScript() {
     return addScriptFromTemplate(ScriptTemplate::Empty());
   }
+
   void deleteAllScripts();
   bool isFull();
-
-  /* MicroPython::ScriptProvider */
-  const char * contentOfScript(const char * name, bool markAsFetched) override;
-  void clearVariableBoxFetchInformation();
-  void clearConsoleFetchInformation();
+  void markDirty() { m_scriptCountValid = false; }
 
   Ion::Storage::Record::ErrorStatus addScriptFromTemplate(const ScriptTemplate * scriptTemplate);
 private:
@@ -52,6 +40,11 @@ private:
    * importation status (1 char), the default content "from math import *\n"
    * (20 char) and 10 char of free space. */
   static constexpr int k_fullFreeSpaceSizeLimit = sizeof(Ion::Storage::record_size_t)+Script::k_defaultScriptNameMaxSize+k_scriptExtensionLength+1+20+10;
+
+  /* This is needed because iterating on the filesystem is slow and
+   * numberOfScripts is called multiple times in a row. */
+  int m_scriptCount;
+  bool m_scriptCountValid;
 };
 
 }

@@ -27,9 +27,7 @@ public:
   bool loadPythonEnvironment();
   void unloadPythonEnvironment();
 
-  void setAutoImport(bool autoImport) { m_autoImportScripts = autoImport; }
-  void autoImport();
-  void autoImportScript(Script script, bool force = false);
+  void runScript(Script script);
   void runAndPrintForCommand(const char * command);
   bool inputRunLoopActive() const { return m_inputRunLoopActive; }
   void terminateInputLoop();
@@ -95,7 +93,6 @@ private:
   size_t firstNewLineCharIndex(const char * text, size_t length);
   StackViewController * stackViewController();
   App * m_pythonDelegate;
-  bool m_importScriptsWhenViewAppears;
   ConsoleStore m_consoleStore;
   SelectableTableView m_selectableTableView;
   ConsoleLineCell m_cells[k_numberOfLineCells];
@@ -109,7 +106,7 @@ private:
   ScriptStore * m_scriptStore;
   SandboxController m_sandboxController;
   bool m_inputRunLoopActive;
-  bool m_autoImportScripts;
+  
 #if EPSILON_GETOPT
   bool m_locked;
 #endif

@@ -8,10 +8,9 @@ ScriptParameterController::ScriptParameterController(Responder * parentResponder
   m_pageTitle(title),
   m_executeScript(I18n::Message::ExecuteScript),
   m_renameScript(I18n::Message::Rename),
-  m_autoImportScript(I18n::Message::AutoImportScript),
   m_deleteScript(I18n::Message::DeleteScript),
   m_selectableTableView(this),
-  m_script(Ion::Storage::Record()),
+  m_script(),
   m_menuController(menuController)
 {
 }
@@ -21,7 +20,7 @@ void ScriptParameterController::setScript(Script script){
 }
 
 void ScriptParameterController::dismissScriptParameterController() {
-  m_script = Script(Ion::Storage::Record());
+  m_script = Script();
   stackViewController()->pop();
 }
 
@@ -42,12 +41,6 @@ bool ScriptParameterController::handleEvent(Ion::Events::Event event) {
         m_menuController->renameSelectedScript();
         return true;
       case 2:
-        m_script.toggleAutoimportationStatus();
-        m_selectableTableView.reloadData();
-        m_menuController->reloadConsole();
-        Container::activeApp()->setFirstResponder(&m_selectableTableView);
-        return true;
-      case 3:
         dismissScriptParameterController();
         m_menuController->deleteScript(s);
         m_menuController->reloadConsole();
@@ -74,15 +67,12 @@ void ScriptParameterController::didBecomeFirstResponder() {
 HighlightCell * ScriptParameterController::reusableCell(int index) {
   assert(index >= 0);
   assert(index < k_totalNumberOfCell);
-  HighlightCell * cells[] = {&m_executeScript, &m_renameScript, &m_autoImportScript, &m_deleteScript};
+  HighlightCell * cells[] = {&m_executeScript, &m_renameScript, &m_deleteScript};
   return cells[index];
 }
 
 void ScriptParameterController::willDisplayCellForIndex(HighlightCell * cell, int index) {
-  if (cell == &m_autoImportScript) {
-    SwitchView * switchView = (SwitchView *)m_autoImportScript.accessoryView();
-    switchView->setState(m_script.autoImportationStatus());
-  }
+
 }
 
 StackViewController * ScriptParameterController::stackViewController() {

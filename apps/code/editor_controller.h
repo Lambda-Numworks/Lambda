@@ -42,6 +42,7 @@ private:
   Script m_script;
   int m_scriptIndex;
   MenuController * m_menuController;
+  char m_buffer[16*1024];
 };
 
 }
