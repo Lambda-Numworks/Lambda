@@ -75,14 +75,13 @@ char * Script::content(char* out_buffer) const {
   if (fd < 0)
     return NULL;
 
-  
-
   size_t size = 0;
   char* tmp = out_buffer;
 
   while(1) {
     int res = SPIFFS_read(&global_filesystem, fd, tmp, 256);
-    assert(res >= 0);
+    if (res < 0)
+      break;
 
     size += res;
     tmp = out_buffer + size;
@@ -100,19 +99,29 @@ char * Script::content(char* out_buffer) const {
 void Script::save(char* out_buffer, size_t size) const {
   if (m_null)
     return;
-
   
-  spiffs_file fd = SPIFFS_open(&global_filesystem, m_name, SPIFFS_O_CREAT | SPIFFS_O_WRONLY | SPIFFS_O_TRUNC, 0);
+  spiffs_file fd = SPIFFS_open(&global_filesystem, m_name, SPIFFS_O_CREAT | SPIFFS_O_WRONLY | SPIFFS_O_TRUNC | SPIFFS_O_DIRECT, 0);
   assert(fd > 0);
   if (fd < 0)
     return;
   
-  int res = SPIFFS_write(&global_filesystem, fd, out_buffer, size);
-  assert(res >= 0);
-  if (res < 0)
-    return;
-  
-  res = SPIFFS_close(&global_filesystem, fd);
+  size_t tmp_size = 0;
+  char* tmp = out_buffer;
+
+  while(1) {
+    int to_write = (size - tmp_size) < 256 ? (size - tmp_size) : 256;
+    int res = SPIFFS_write(&global_filesystem, fd, tmp, to_write);
+    if (res < 0)
+      break;
+
+    tmp_size += res;
+    tmp = out_buffer + tmp_size;
+
+    if (res == 0)
+      break;
+  }
+
+  int res = SPIFFS_close(&global_filesystem, fd);
   assert(res >= 0);
   if (res < 0)
     return;
