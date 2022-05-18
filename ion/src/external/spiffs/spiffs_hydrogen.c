@@ -1066,6 +1066,8 @@ struct spiffs_dirent *SPIFFS_readdir(spiffs_DIR *d, struct spiffs_dirent *e) {
   s32_t res;
   struct spiffs_dirent *ret = 0;
 
+  memset(e, 0, sizeof(struct spiffs_dirent));
+
   res = spiffs_obj_lu_find_entry_visitor(d->fs,
       d->block,
       d->entry,
