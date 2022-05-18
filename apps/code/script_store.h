@@ -24,6 +24,7 @@ public:
   int numberOfScripts();
   Script scriptAtIndex(int index);
   Ion::Storage::Record::ErrorStatus addNewScript() {
+    markDirty();
     return addScriptFromTemplate(ScriptTemplate::Empty());
   }
 
