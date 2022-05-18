@@ -41,6 +41,10 @@ public:
     m_name[64] = '\0';
   }
 
+  Script(const Script& other) : m_null(other.m_null) {
+    memcpy(m_name, other.m_name, 65);
+  }
+
   Script() : m_null(true) {}
 
   char * content(char* buffer) const;
