@@ -62,26 +62,9 @@ Ion::Storage::Record::ErrorStatus ScriptStore::addScriptFromTemplate(const Scrip
   size_t valueSize = strlen(scriptTemplate->content());
   if (!Script::nameCompliant(scriptTemplate->name()))
     return Ion::Storage::Record::ErrorStatus::NonCompliantName;
-  
-  spiffs_file fd = SPIFFS_open(&global_filesystem,scriptTemplate->name(), SPIFFS_O_CREAT | SPIFFS_O_WRONLY | SPIFFS_O_TRUNC, 0);
-  if (fd == SPIFFS_ERR_CONFLICTING_NAME)
-    return Ion::Storage::Record::ErrorStatus::NameTaken;
 
-  assert(fd > 0);
-  if (fd < 0)
-    return Ion::Storage::Record::ErrorStatus::NonCompliantName;
-  
-  int res = SPIFFS_write(&global_filesystem, fd, (void*) scriptTemplate->value(), valueSize);
-
-  assert(res >= 0);
-  if (res < 0)
-    return Ion::Storage::Record::ErrorStatus::NonCompliantName;
-  
-  res = SPIFFS_close(&global_filesystem, fd);
-
-  assert(res >= 0);
-  if (res < 0)
-    return Ion::Storage::Record::ErrorStatus::NonCompliantName;
+  Script s((char*) scriptTemplate->name());
+  s.save((char*) scriptTemplate->content(), valueSize);
 
   return Ion::Storage::Record::ErrorStatus::None;
 }
