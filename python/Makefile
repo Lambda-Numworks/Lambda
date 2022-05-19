@@ -203,7 +203,7 @@ tests_src += $(addprefix python/test/,\
   ion.cpp \
   kandinsky.cpp \
   math.cpp \
-  random.cpp \
+  urandom.cpp \
   time.cpp \
   turtle.cpp \
   matplotlib.cpp \
