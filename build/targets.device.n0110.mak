@@ -1,3 +1,29 @@
+epsilon_flavors_bootloader = $(foreach floavor,$(epsilon_flavors),$(floavor).A $(floavor).B)
+
+define rule_for_epsilon_flavor_bootloader
+$$(BUILD_DIR)/epsilon.$(1).A.$$(EXE): $$(call flavored_object_for,$$(epsilon_src),bootloader $(1))
+$$(BUILD_DIR)/epsilon.$(1).A.$$(EXE): LDSCRIPT = ion/src/device/n0110/bootloader.A.ld
+$$(BUILD_DIR)/epsilon.$(1).B.$$(EXE): $$(call flavored_object_for,$$(epsilon_src),bootloader $(1))
+$$(BUILD_DIR)/epsilon.$(1).B.$$(EXE): LDSCRIPT = ion/src/device/n0110/bootloader.B.ld
+$$(BUILD_DIR)/epsilon.$(1).bin: $$(BUILD_DIR)/epsilon.$(1).A.bin $$(BUILD_DIR)/epsilon.$(1).B.bin
+	@echo "COMBINE $$@"
+	$(Q) cat $$(BUILD_DIR)/epsilon.$(1).A.bin >> $$(BUILD_DIR)/epsilon.$(1).bin
+	$(Q) truncate -s 4MiB $$(BUILD_DIR)/epsilon.$(1).bin
+	$(Q) cat $$(BUILD_DIR)/epsilon.$(1).B.bin >> $$(BUILD_DIR)/epsilon.$(1).bin
+	$(Q) truncate -s 8MiB $$(BUILD_DIR)/epsilon.$(1).bin
+endef
+
+$(BUILD_DIR)/epsilon.A.$(EXE): $(call flavored_object_for,$(epsilon_src),bootloader)
+$(BUILD_DIR)/epsilon.A.$(EXE): LDSCRIPT = ion/src/device/n0110/bootloader.A.ld
+
+$(BUILD_DIR)/epsilon.B.$(EXE): $(call flavored_object_for,$(epsilon_src),bootloader)
+$(BUILD_DIR)/epsilon.B.$(EXE): LDSCRIPT = ion/src/device/n0110/bootloader.B.ld
+
+$(foreach flavor,$(epsilon_flavors),$(eval $(call rule_for_epsilon_flavor_bootloader,$(flavor))))
+
+HANDY_TARGETS += $(foreach flavor,$(epsilon_flavors_bootloader),epsilon.$(flavor))
+HANDY_TARGETS += epsilon.A epsilon.B
+
 HANDY_TARGETS += test.external_flash.write test.external_flash.read bootloader
 
 $(BUILD_DIR)/test.external_flash.%.$(EXE): LDSCRIPT = ion/test/device/n0110/external_flash_tests.ld
