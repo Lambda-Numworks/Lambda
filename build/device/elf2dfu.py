@@ -1,12 +1,14 @@
 #coding=utf-8
 # Translate ELF file into DfuSe file
 
-import sys
-import struct
-import zlib # for CRC-32 calculation
-import subprocess
-import re
 import argparse
+import random
+import re
+import struct
+import subprocess
+import sys
+import zlib  # for CRC-32 calculation
+from glob import glob
 
 # arm-none-eabi-objdump -h -w file.elf
 # arm-none-eabi-objcopy -O binary -j .data file.elf file.bin
@@ -39,8 +41,14 @@ def generate_dfu_file(targets, usb_vid_pid, dfu_file):
   data += struct.pack('<I', crc)
   open(dfu_file, 'wb').write(data)
 
+# We avoid problems with running in paralel by adding a random number to the
+# file name
+
+global_random = random.getrandbits(32)
+
 def bin_file(block):
-  return "firmware" + block['name'] + ".bin"
+  global global_random
+  return "firmware" + block['name'] + str(global_random) + ".bin"
 
 def print_sections(sections):
   for s in sections:
