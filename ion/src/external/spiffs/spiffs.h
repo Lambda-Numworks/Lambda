@@ -807,8 +807,10 @@ u32_t SPIFFS_buffer_bytes_for_cache(spiffs *fs, u32_t num_pages);
 #endif
 #endif
 
-#if SPIFFS_CACHE
+#if !SPIFFS_READ_ONLY
+s32_t spiffs_erase_block(spiffs *fs, spiffs_block_ix bix);
 #endif
+
 #if defined(__cplusplus)
 }
 #endif
