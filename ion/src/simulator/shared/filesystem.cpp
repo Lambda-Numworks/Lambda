@@ -63,11 +63,20 @@ void init() {
 
 namespace FileSystem {
 
-void format() {
+void format(FormatCallback callback, void* sender) {
   SPIFFS_unmount(&global_filesystem);
-  int res = SPIFFS_format(&global_filesystem);
-  assert (res == 0);
-  res = SPIFFS_mount(&global_filesystem, &Ion::Simulator::FileSystem::cfg, Ion::Simulator::FileSystem::s_workBuf, Ion::Simulator::FileSystem::s_fds, sizeof(Ion::Simulator::FileSystem::s_fds), Ion::Simulator::FileSystem::s_cacheBuffer, sizeof(Ion::Simulator::FileSystem::s_cacheBuffer), 0);
+
+  spiffs_block_ix bix = 0;
+  while (bix < global_filesystem.block_count) {
+    global_filesystem.max_erase_count = 0;
+    spiffs_erase_block(&global_filesystem, bix);
+    bix++;
+
+    if (callback != nullptr)
+      callback(bix, global_filesystem.block_count, sender);
+  }
+
+  int res = SPIFFS_mount(&global_filesystem, &Ion::Simulator::FileSystem::cfg, Ion::Simulator::FileSystem::s_workBuf, Ion::Simulator::FileSystem::s_fds, sizeof(Ion::Simulator::FileSystem::s_fds), Ion::Simulator::FileSystem::s_cacheBuffer, sizeof(Ion::Simulator::FileSystem::s_cacheBuffer), 0);
   assert (res == 0);
 }
 

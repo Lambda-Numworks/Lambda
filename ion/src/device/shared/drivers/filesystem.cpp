@@ -6,6 +6,7 @@
 #include "flash.h"
 
 #include <ion/display.h>
+#include <ion/keyboard.h>
 #include <ion/timing.h>
 #include <ion/filesystem.h>
 
@@ -50,7 +51,10 @@ void init() {
   int res = SPIFFS_mount(&global_filesystem, &cfg, s_workBuf, s_fds, sizeof(s_fds), s_cacheBuffer, sizeof(s_cacheBuffer), 0);
 
   if (res != 0) {
-    Ion::FileSystem::format();
+    Ion::Display::pushRectUniform(KDRect(0, 0, 320, 10), KDColorBlack);
+    Ion::FileSystem::format([](int current, int total, void* _) {
+      Ion::Display::pushRectUniform(KDRect(0, 0, (320 * current) / total, 10), KDColorGreen);
+    });
   }
 }
 
@@ -63,12 +67,21 @@ void shutdown() {
 
 namespace FileSystem {
 
-void format() {
+void format(FormatCallback callback, void* sender) {
   SPIFFS_unmount(&global_filesystem);
-  int res = SPIFFS_format(&global_filesystem);
-  assert(res == 0);
-  res = SPIFFS_mount(&global_filesystem, &Ion::Device::FileSystem::cfg, Ion::Device::FileSystem::s_workBuf, Ion::Device::FileSystem::s_fds, sizeof(Ion::Device::FileSystem::s_fds), Ion::Device::FileSystem::s_cacheBuffer, sizeof(Ion::Device::FileSystem::s_cacheBuffer), 0);
-  assert(res == 0);
+
+  spiffs_block_ix bix = 0;
+  while (bix < global_filesystem.block_count) {
+    global_filesystem.max_erase_count = 0;
+    spiffs_erase_block(&global_filesystem, bix);
+    bix++;
+
+    if (callback != nullptr)
+      callback(bix, global_filesystem.block_count, sender);
+  }
+
+  int res = SPIFFS_mount(&global_filesystem, &Ion::Device::FileSystem::cfg, Ion::Device::FileSystem::s_workBuf, Ion::Device::FileSystem::s_fds, sizeof(Ion::Device::FileSystem::s_fds), Ion::Device::FileSystem::s_cacheBuffer, sizeof(Ion::Device::FileSystem::s_cacheBuffer), 0);
+  assert (res == 0);
 }
 
 }
