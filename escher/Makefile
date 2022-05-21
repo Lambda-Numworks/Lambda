@@ -53,6 +53,7 @@ escher_src += $(addprefix escher/src/,\
   palette.cpp \
   pointer_text_view.cpp \
   pop_up_controller.cpp \
+  progress_bar_view.cpp \
   responder.cpp \
   run_loop.cpp \
   scroll_view.cpp \
