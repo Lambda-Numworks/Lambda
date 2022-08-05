@@ -3,7 +3,7 @@ SECTIONS {
   .signed_payload_prefix ORIGIN(FLASH) : {
     FILL(0xFF);
     BYTE(0xFF)
-    . = ORIGIN(FLASH) + SIGNED_PAYLOAD_LENGTH;
+    . += SIGNED_PAYLOAD_LENGTH - 1;
   } >FLASH
 
   .kernel_header : {
@@ -88,6 +88,13 @@ SECTIONS {
     *(.data.*)
     _data_section_end_ram = .;
   } >SRAM AT> FLASH
+
+  .signature : {
+    . = ALIGN(4);
+    FILL(0xFF);
+    BYTE(0xFF)
+    . += SIGNATURE_LENGTH - 1;
+  } > FLASH
 
   .filesystem_buffer : {
     . = ALIGN(FLASH_BLOCK);

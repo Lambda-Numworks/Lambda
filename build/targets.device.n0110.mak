@@ -1,28 +1,63 @@
-epsilon_flavors_bootloader = $(foreach floavor,$(epsilon_flavors),$(floavor).A $(floavor).B)
+epsilon_flavors_bootloader = $(foreach flavor,$(epsilon_flavors),$(flavor).A $(flavor).B $(flavor).A.signed $(flavor).B.signed)
 
 define rule_for_epsilon_flavor_bootloader
 $$(BUILD_DIR)/epsilon.$(1).A.$$(EXE): $$(call flavored_object_for,$$(epsilon_src),bootloader $(1))
 $$(BUILD_DIR)/epsilon.$(1).A.$$(EXE): LDSCRIPT = ion/src/device/n0110/bootloader.A.ld
+$$(BUILD_DIR)/epsilon.$(1).A.signed.bin: $(EPSILON_KEY) $$(BUILD_DIR)/epsilon.$(1).A.bin
+	@echo "SIGN    $$@"
+	$$(Q) $$(PYTHON) build/device/sign.py $$^ $$@
+
 $$(BUILD_DIR)/epsilon.$(1).B.$$(EXE): $$(call flavored_object_for,$$(epsilon_src),bootloader $(1))
 $$(BUILD_DIR)/epsilon.$(1).B.$$(EXE): LDSCRIPT = ion/src/device/n0110/bootloader.B.ld
+$$(BUILD_DIR)/epsilon.$(1).B.signed.bin: $(EPSILON_KEY) $$(BUILD_DIR)/epsilon.$(1).B.bin
+	@echo "SIGN    $$@"
+	$$(Q) $$(PYTHON) build/device/sign.py $$^ $$@
+
 $$(BUILD_DIR)/epsilon.$(1).bin: $$(BUILD_DIR)/epsilon.$(1).A.bin $$(BUILD_DIR)/epsilon.$(1).B.bin
 	@echo "COMBINE $$@"
 	$(Q) cat $$(BUILD_DIR)/epsilon.$(1).A.bin >> $$(BUILD_DIR)/epsilon.$(1).bin
 	$(Q) truncate -s 4MiB $$(BUILD_DIR)/epsilon.$(1).bin
 	$(Q) cat $$(BUILD_DIR)/epsilon.$(1).B.bin >> $$(BUILD_DIR)/epsilon.$(1).bin
 	$(Q) truncate -s 8MiB $$(BUILD_DIR)/epsilon.$(1).bin
+
+$$(BUILD_DIR)/epsilon.$(1).signed.bin: $$(BUILD_DIR)/epsilon.$(1).A.signed.bin $$(BUILD_DIR)/epsilon.$(1).B.signed.bin
+	@echo "COMBINE $$@"
+	$(Q) cat $$(BUILD_DIR)/epsilon.$(1).A.signed.bin >> $$(BUILD_DIR)/epsilon.$(1).signed.bin
+	$(Q) truncate -s 4MiB $$(BUILD_DIR)/epsilon.$(1).signed.bin
+	$(Q) cat $$(BUILD_DIR)/epsilon.$(1).B.signed.bin >> $$(BUILD_DIR)/epsilon.$(1).signed.bin
+	$(Q) truncate -s 8MiB $$(BUILD_DIR)/epsilon.$(1).signed.bin
 endef
 
 $(BUILD_DIR)/epsilon.A.$(EXE): $(call flavored_object_for,$(epsilon_src),bootloader)
 $(BUILD_DIR)/epsilon.A.$(EXE): LDSCRIPT = ion/src/device/n0110/bootloader.A.ld
+$(BUILD_DIR)/epsilon.A.signed.bin: $(EPSILON_KEY) $$(BUILD_DIR)/epsilon.A.bin
+	@echo "SIGN    $@"
+	$(Q) $(PYTHON) build/device/sign.py $^ $@
 
 $(BUILD_DIR)/epsilon.B.$(EXE): $(call flavored_object_for,$(epsilon_src),bootloader)
 $(BUILD_DIR)/epsilon.B.$(EXE): LDSCRIPT = ion/src/device/n0110/bootloader.B.ld
+$(BUILD_DIR)/epsilon.B.signed.bin: $(EPSILON_KEY) $$(BUILD_DIR)/epsilon.B.bin
+	@echo "SIGN    $@"
+	$(Q) $(PYTHON) build/device/sign.py $^ $@
+
+$(BUILD_DIR)/epsilon.bin: $(BUILD_DIR)/epsilon.A.bin $(BUILD_DIR)/epsilon.B.bin
+	@echo "COMBINE $@"
+	$(Q) cat $(BUILD_DIR)/epsilon.A.bin >> $(BUILD_DIR)/epsilon.bin
+	$(Q) truncate -s 4MiB $(BUILD_DIR)/epsilon.bin
+	$(Q) cat $(BUILD_DIR)/epsilon.B.bin >> $(BUILD_DIR)/epsilon.bin
+	$(Q) truncate -s 8MiB $(BUILD_DIR)/epsilon.bin
+
+$(BUILD_DIR)/epsilon.signed.bin: $(BUILD_DIR)/epsilon.A.signed.bin $(BUILD_DIR)/epsilon.B.signed.bin
+	@echo "COMBINE $@"
+	$(Q) cat $(BUILD_DIR)/epsilon.A.signed.bin >> $(BUILD_DIR)/epsilon.signed.bin
+	$(Q) truncate -s 4MiB $(BUILD_DIR)/epsilon.signed.bin
+	$(Q) cat $(BUILD_DIR)/epsilon.B.signed.bin >> $(BUILD_DIR)/epsilon.signed.bin
+	$(Q) truncate -s 8MiB $(BUILD_DIR)/epsilon.signed.bin
 
 $(foreach flavor,$(epsilon_flavors),$(eval $(call rule_for_epsilon_flavor_bootloader,$(flavor))))
 
 HANDY_TARGETS += $(foreach flavor,$(epsilon_flavors_bootloader),epsilon.$(flavor))
-HANDY_TARGETS += epsilon.A epsilon.B
+HANDY_TARGETS += epsilon.A epsilon.B epsilon.A.signed epsilon.B.signed epsilon.signed
 
 HANDY_TARGETS += test.external_flash.write test.external_flash.read bootloader
 

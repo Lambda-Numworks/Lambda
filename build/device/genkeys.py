@@ -1,5 +1,5 @@
 #coding=utf-8
-# Sign a firmware with Ed25519
+# Generate Ed25519 key pair
 
 import json
 import sys
