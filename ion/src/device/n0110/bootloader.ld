@@ -1,7 +1,8 @@
 /* Same as flash.ld but everything is linked in internal flash */
 
 MEMORY {
-  INTERNAL_FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 64K
+  INTERNAL_FLASH_ITCM (rx) : ORIGIN = 0x00200000, LENGTH = 64K
+  INTERNAL_FLASH_AXIM (rx) : ORIGIN = 0x08000000, LENGTH = 64K
   SRAM (rw)  : ORIGIN = 0x20000000, LENGTH = 256K
 }
 
@@ -12,7 +13,7 @@ FLASH_SECOND_SECTOR_OFFSET = 16K;
 FLASH_SECOND_SECTOR_SIZE = 16K;
 
 SECTIONS {
-  .isr_vector_table ORIGIN(INTERNAL_FLASH) : {
+  .isr_vector_table ORIGIN(INTERNAL_FLASH_ITCM) : {
     /* When booting, the STM32F412 fetches the content of address 0x0, and
      * extracts from it various key infos: the initial value of the PC register
      * (program counter), the initial value of the stack pointer, and various
@@ -27,31 +28,31 @@ SECTIONS {
      * convenient: using function pointers, we can easily point to the service
      * routine for each interrupt. */
     KEEP(*(.isr_vector_table))
-  } >INTERNAL_FLASH
+  } >INTERNAL_FLASH_ITCM
 
   .header : {
     KEEP(*(.header))
-  } >INTERNAL_FLASH
+  } >INTERNAL_FLASH_ITCM
 
   .rodata : {
     . = ALIGN(4);
     *(.rodata)
     *(.rodata.*)
-  } >INTERNAL_FLASH
+  } >INTERNAL_FLASH_ITCM
 
-  .exam_mode_buffer ORIGIN(INTERNAL_FLASH) + FLASH_SECOND_SECTOR_OFFSET : {
-    _exam_mode_buffer_start = .;
+  .exam_mode_buffer ORIGIN(INTERNAL_FLASH_ITCM) + FLASH_SECOND_SECTOR_OFFSET : {
+    _exam_mode_buffer_start = ORIGIN(INTERNAL_FLASH_AXIM) + FLASH_SECOND_SECTOR_OFFSET;
     KEEP(*(.exam_mode_buffer))
     /* Note: We don't increment "." here, we set it. */
-    . = ORIGIN(INTERNAL_FLASH) + FLASH_SECOND_SECTOR_OFFSET + FLASH_SECOND_SECTOR_SIZE;
-    _exam_mode_buffer_end = .;
-  } >INTERNAL_FLASH
+    . = ORIGIN(INTERNAL_FLASH_ITCM) + FLASH_SECOND_SECTOR_OFFSET + FLASH_SECOND_SECTOR_SIZE;
+    _exam_mode_buffer_end = ORIGIN(INTERNAL_FLASH_AXIM) + FLASH_SECOND_SECTOR_OFFSET + FLASH_SECOND_SECTOR_SIZE;
+  } >INTERNAL_FLASH_ITCM
 
   .text : {
     . = ALIGN(4);
     *(.text)
     *(.text.*)
-  } >INTERNAL_FLASH
+  } >INTERNAL_FLASH_ITCM
 
   .init_array : {
     . = ALIGN(4);
@@ -59,7 +60,7 @@ SECTIONS {
     KEEP (*(.init_array*))
     _init_array_end = .;
     ASSERT(_init_array_start == _init_array_end, "Error: C++ Static constructors are not allowed");
-  } >INTERNAL_FLASH
+  } >INTERNAL_FLASH_ITCM
 
   .data : {
     /* The data section is written to Flash but linked as if it were in RAM.
@@ -80,17 +81,17 @@ SECTIONS {
     *(.data)
     *(.data.*)
     _data_section_end_ram = .;
-  } >SRAM AT> INTERNAL_FLASH
+  } >SRAM AT> INTERNAL_FLASH_ITCM
 
   .trampolines_table : {
-    . = ORIGIN(INTERNAL_FLASH) + TRAMPOLINES_OFFSET;
+    . = ORIGIN(INTERNAL_FLASH_ITCM) + TRAMPOLINES_OFFSET;
     KEEP(*(.trampolines_table));
-  } > INTERNAL_FLASH
+  } > INTERNAL_FLASH_ITCM
 
   .custom_trampolines_table : {
-    . = ORIGIN(INTERNAL_FLASH) + CUSTOM_TRAMPOLINES_OFFSET;
+    . = ORIGIN(INTERNAL_FLASH_ITCM) + CUSTOM_TRAMPOLINES_OFFSET;
     KEEP(*(.custom_trampolines_table));
-  } > INTERNAL_FLASH
+  } > INTERNAL_FLASH_ITCM
 
   .bss : {
     /* The bss section contains data for all uninitialized variables
