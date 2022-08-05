@@ -1,3 +1,4 @@
 /output/
 /build/artifacts/
 build/device/**/*.pyc
+build/device/keys.json

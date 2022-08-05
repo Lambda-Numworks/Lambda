@@ -10,6 +10,7 @@ include build/platform.$(PLATFORM).mak
 include build/toolchain.$(TOOLCHAIN).mak
 include build/variants.mak
 include build/helpers.mk
+include build/keys.mk
 
 .PHONY: info
 info:
