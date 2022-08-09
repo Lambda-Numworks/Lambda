@@ -6,6 +6,8 @@
 #include "kernel_header.h"
 #include "userland_header.h"
 
+#include <bootloader/key.h>
+
 namespace Bootloader {
 
 class Slot {
@@ -21,6 +23,11 @@ public:
 
   static const Slot A();
   static const Slot B();
+
+  const uint8_t* signature() const;
+  const uint8_t* signedPayload() const;
+  const size_t signedPayloadLength() const;
+  const Key* checkSign() const;
 
 private:
   const KernelHeader* m_kernelHeader;

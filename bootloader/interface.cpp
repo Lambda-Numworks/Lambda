@@ -5,6 +5,7 @@
 #include <bootloader/interface.h>
 #include <bootloader/slot.h>
 #include <bootloader/boot.h>
+#include <bootloader/key.h>
 
 #include "computer.h"
 #include "cable.h"
@@ -47,13 +48,13 @@ void Interface::draw() {
   drawImage(ctx, ImageStore::Cable, 172);
 
   ctx->drawString("Slot A:", KDPoint(0, 0),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
-  ctx->drawString("Slot B:", KDPoint(0, 13), KDFont::SmallFont, KDColorWhite, KDColorBlack);
-  ctx->drawString("Current:", KDPoint(0, 26),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
+  ctx->drawString("Slot B:", KDPoint(0, 26), KDFont::SmallFont, KDColorWhite, KDColorBlack);
+  ctx->drawString("Current:", KDPoint(0, 52),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
 
   if (Boot::mode() == BootMode::SlotA) {
-    ctx->drawString("Slot A", KDPoint(63, 26),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
+    ctx->drawString("Slot A", KDPoint(63, 52),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
   } else if (Boot::mode() == BootMode::SlotB) {
-    ctx->drawString("Slot B", KDPoint(63, 26),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
+    ctx->drawString("Slot B", KDPoint(63, 52),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
   }
 
   Slot slots[2] = {Slot::A(), Slot::B()};
@@ -63,18 +64,30 @@ void Interface::draw() {
 
     if (slot.kernelHeader()->isValid() && slot.userlandHeader()->isValid()) {
       if (slot.userlandHeader()->isOmega() && slot.userlandHeader()->isUpsilon()) {
-        ctx->drawString("Upsilon", KDPoint(56, i*13),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
-        ctx->drawString(slot.userlandHeader()->upsilonVersion(), KDPoint(112, i*13),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
+        ctx->drawString("Upsilon", KDPoint(56, i*26),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
+        ctx->drawString(slot.userlandHeader()->upsilonVersion(), KDPoint(112, i*26),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
       } else if (slot.userlandHeader()->isOmega()) {
-        ctx->drawString("Omega", KDPoint(56, i*13),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
-        ctx->drawString(slot.userlandHeader()->omegaVersion(), KDPoint(112, i*13),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
+        ctx->drawString("Omega", KDPoint(56, i*26),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
+        ctx->drawString(slot.userlandHeader()->omegaVersion(), KDPoint(112, i*26),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
       } else {
-        ctx->drawString("Epsilon", KDPoint(56, i*13),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
-        ctx->drawString(slot.userlandHeader()->version(), KDPoint(112, i*13),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
+        ctx->drawString("Epsilon", KDPoint(56, i*26),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
+        ctx->drawString(slot.userlandHeader()->version(), KDPoint(112, i*26),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
       }
-      ctx->drawString(slot.kernelHeader()->patchLevel(), KDPoint(168, i*13),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
+      ctx->drawString(slot.kernelHeader()->patchLevel(), KDPoint(168, i*26),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
+
+      ctx->drawString("Checking...", KDPoint(56, i*26 + 13),  KDFont::SmallFont, KDColorYellow, KDColorBlack);
+
+      const Key* signature = slot.checkSign();
+
+      if (signature == nullptr) {
+        ctx->fillRect(KDRect(56, i*26 + 13, 240 - 56, 13), KDColorBlack);
+        ctx->drawString("Not signed", KDPoint(56, i*26 + 13),  KDFont::SmallFont, KDColorRed, KDColorBlack);
+      } else {
+          ctx->fillRect(KDRect(56, i*26 + 13, 240 - 56, 13), KDColorBlack);
+          ctx->drawString(signature->name, KDPoint(56, i*26 + 13),  KDFont::SmallFont, signature->trusted ? KDColorGreen : KDColorRed, KDColorBlack);
+      }
     } else {
-      ctx->drawString("Invalid", KDPoint(56, i*13),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
+      ctx->drawString("Invalid", KDPoint(56, i*26),  KDFont::SmallFont, KDColorWhite, KDColorBlack);
     }
   }
 

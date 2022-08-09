@@ -6,6 +6,7 @@
 namespace Bootloader {
 
 class KernelHeader {
+  friend class Slot;
 public:
   const char * version() const;
   const char * patchLevel() const;
