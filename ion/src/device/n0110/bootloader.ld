@@ -40,6 +40,20 @@ SECTIONS {
     *(.rodata.*)
   } >INTERNAL_FLASH_ITCM
 
+  .text.before : {
+    . = ALIGN(4);
+    /*
+     * We move some stuff here because there are 6k of free space between the
+     * end of .rodata and the beginning of .exam_mode_buffer
+     */
+    *(.text.ed25519_*)
+    *(.text.sha512_*)
+    *(.text.fe_*)
+    *(.text.sc_*)
+    *(.text.ge_*)
+    *(.text.consttime_equal)
+  } >INTERNAL_FLASH_ITCM
+
   .exam_mode_buffer ORIGIN(INTERNAL_FLASH_ITCM) + FLASH_SECOND_SECTOR_OFFSET : {
     _exam_mode_buffer_start = ORIGIN(INTERNAL_FLASH_AXIM) + FLASH_SECOND_SECTOR_OFFSET;
     KEEP(*(.exam_mode_buffer))

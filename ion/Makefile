@@ -29,6 +29,7 @@ ion_src += $(addprefix ion/src/shared/, \
   storage.cpp \
   unicode/utf8_decoder.cpp\
   unicode/utf8_helper.cpp\
+  verify.cpp \
 )
 
 ion_src += ion/src/external/lz4/lz4.c
@@ -39,6 +40,19 @@ ion_src += $(addprefix ion/src/external/spiffs/,\
   spiffs_gc.c \
   spiffs_hydrogen.c \
   spiffs_nucleus.c \
+)
+
+ion_src += $(addprefix ion/src/external/ed25519/,\
+  add_scalar.c \
+  fe.c \
+  ge.c \
+  key_exchange.c \
+  keypair.c \
+  sc.c \
+  seed.c \
+  sha512.c \
+  sign.c \
+  verify.c \
 )
 
 tests_src += $(addprefix ion/test/,\

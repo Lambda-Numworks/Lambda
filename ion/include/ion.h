@@ -50,6 +50,9 @@ uint32_t random();
 // Decompress data
 void decompress(const uint8_t * src, uint8_t * dst, int srcSize, int dstSize);
 
+// Verify Ed25519 signature
+bool verify(const uint8_t signature[64], const uint8_t *message, size_t message_len, const uint8_t public_key[32]);
+
 // Sets and returns address to the first object that can be allocated on stack
 void * stackStart();
 void setStackStart(void *);
